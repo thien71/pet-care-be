@@ -1,4 +1,4 @@
-const authService = require("../services/authService");
+const authService = require("../services/authService"); // Đổi tên file
 const Joi = require("joi");
 
 const registerSchema = Joi.object({
@@ -14,26 +14,38 @@ const loginSchema = Joi.object({
 });
 
 async function register(req, res, next) {
+  console.log("🎯 Register controller hit");
   const { error } = registerSchema.validate(req.body);
   if (error) return res.status(400).json({ message: error.details[0].message });
   try {
     const user = await authService.registerUser(req.body);
     res.status(201).json({ message: "User registered", user });
   } catch (err) {
+    console.error("❌ Register error:", err.message);
     next(err);
   }
 }
 
 async function login(req, res, next) {
+  console.log("🎯 Login controller hit");
+  console.log("📥 Request body:", req.body);
+
   const { error } = loginSchema.validate(req.body);
-  if (error) return res.status(400).json({ message: error.details[0].message });
+  if (error) {
+    console.log("❌ Validation error:", error.details[0].message);
+    return res.status(400).json({ message: error.details[0].message });
+  }
+
   try {
-    const { user, accessToken, refreshToken } = await authService.loginUser(
+    console.log("✅ Validation passed");
+    const result = await authService.loginUser(
       req.body.email,
       req.body.matKhau
     );
-    res.json({ user, accessToken, refreshToken }); // Bỏ refreshToken nếu không dùng
+    console.log("🎉 Login successful");
+    res.json(result);
   } catch (err) {
+    console.error("💥 Login error:", err.message);
     next(err);
   }
 }
@@ -47,7 +59,5 @@ async function refresh(req, res, next) {
     next(err);
   }
 }
-
-// Bỏ logout
 
 module.exports = { register, login, refresh };
