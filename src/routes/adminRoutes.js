@@ -40,6 +40,8 @@ router.get("/shops", adminOnly, adminController.getShops);
 router.get("/shops/:id", adminOnly, adminController.getShopById);
 router.put("/shops/:id", adminOnly, adminController.updateShop);
 router.delete("/shops/:id", adminOnly, adminController.deleteShop);
+router.put("/shops/:id/approve", adminOnly, adminController.approveShop);
+router.put("/shops/:id/reject", adminOnly, adminController.rejectShop);
 
 // Đề Xuất Dịch Vụ
 router.get(

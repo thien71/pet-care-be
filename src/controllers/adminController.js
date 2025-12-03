@@ -265,6 +265,45 @@ async function deleteShop(req, res, next) {
   }
 }
 
+// Duyệt cửa hàng
+async function approveShop(req, res, next) {
+  try {
+    const shop = await CuaHang.findByPk(req.params.id);
+    if (!shop) return res.status(404).json({ message: "Shop not found" });
+
+    await shop.update({
+      trangThai: "HOAT_DONG",
+    });
+
+    res.json({ message: "Shop approved", data: shop });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// Từ chối cửa hàng
+async function rejectShop(req, res, next) {
+  try {
+    const { lyDo } = req.body;
+    const shop = await CuaHang.findByPk(req.params.id);
+    if (!shop) return res.status(404).json({ message: "Shop not found" });
+
+    // Ghi lại lý do từ chối (có thể lưu vào DB bằng thêm field)
+    await shop.update({
+      trangThai: "BI_KHOA", // Hoặc tạo status mới "TU_CHOI"
+    });
+
+    // TODO: Gửi email thông báo cho owner
+
+    res.json({
+      message: "Shop rejected",
+      data: shop,
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
 // ==================== ĐỀ XUẤT DỊCH VỤ ====================
 async function getServiceProposals(req, res, next) {
   try {
@@ -421,6 +460,8 @@ module.exports = {
   getShopById,
   updateShop,
   deleteShop,
+  approveShop,
+  rejectShop,
   getServiceProposals,
   approveServiceProposal,
   rejectServiceProposal,

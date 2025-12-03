@@ -3,9 +3,7 @@ const cors = require("cors");
 const helmet = require("helmet");
 const morgan = require("morgan");
 const errorHandler = require("./middlewares/errorHandler");
-const authRoutes = require("./routes/authRoutes");
-const adminRoutes = require("./routes/adminRoutes");
-const userRoutes = require("./routes/userRoutes");
+const routes = require("./routes");
 
 console.log("📦 Initializing Express app...");
 
@@ -23,9 +21,7 @@ app.get("/api/test", (req, res) => {
 });
 
 console.log("🛣️ Registering routes...");
-app.use("/api/auth", authRoutes);
-app.use("/api/admin", adminRoutes);
-app.use("/api/users", userRoutes);
+routes(app);
 
 app.use(errorHandler);
 
