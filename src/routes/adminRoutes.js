@@ -37,6 +37,7 @@ router.delete("/services/:id", adminOnly, adminController.deleteService);
 
 // Cửa Hàng
 router.get("/shops", adminOnly, adminController.getShops);
+router.get("/shop-approvals", adminOnly, adminController.getShopApprovals);
 router.get("/shops/:id", adminOnly, adminController.getShopById);
 router.put("/shops/:id", adminOnly, adminController.updateShop);
 router.delete("/shops/:id", adminOnly, adminController.deleteShop);

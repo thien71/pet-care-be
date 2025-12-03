@@ -28,21 +28,14 @@ app.use(errorHandler);
 console.log("🔗 Connecting to database...");
 const sequelize = require("./config/db");
 
-// Đơn giản hóa sync - không load models ở đây
 sequelize
   .authenticate()
   .then(() => {
     console.log("✅ Database connection established");
-    return sequelize.sync({ alter: true });
-  })
-  .then(() => {
-    console.log("✅ Database synced");
   })
   .catch((err) => {
     console.error("❌ Database error:", err.message);
     console.error(err.stack);
   });
-
-console.log("✅ App initialization complete");
 
 module.exports = app;

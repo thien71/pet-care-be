@@ -222,6 +222,25 @@ async function getShops(req, res, next) {
   }
 }
 
+async function getShopApprovals(req, res, next) {
+  try {
+    // Giả định trạng thái chờ duyệt là 'CHO_DUYET'. Nếu khác, cần điều chỉnh dựa trên model CuaHang.
+    const pendingShops = await CuaHang.findAll({
+      where: { trangThai: "CHO_DUYET" },
+      include: [
+        {
+          model: NguoiDung,
+          as: "NguoiDaiDien",
+          attributes: ["hoTen", "email"],
+        },
+      ],
+    });
+    res.json({ data: pendingShops });
+  } catch (err) {
+    next(err);
+  }
+}
+
 async function getShopById(req, res, next) {
   try {
     const shop = await CuaHang.findByPk(req.params.id, {
@@ -457,6 +476,7 @@ module.exports = {
   updateService,
   deleteService,
   getShops,
+  getShopApprovals,
   getShopById,
   updateShop,
   deleteShop,
