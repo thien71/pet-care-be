@@ -1,19 +1,22 @@
-// src/controllers/customerController.js (Backend)
 const { CuaHang, NguoiDung, VaiTro } = require("../models");
-const bcrypt = require("bcrypt");
 
-// Đăng ký cửa hàng
 async function registerShop(req, res, next) {
   try {
     const { tenCuaHang, diaChi, soDienThoai, moTa, kinhDo, viDo } = req.body;
     const maNguoiDung = req.user.id;
 
-    // Validate text fields
+    console.log("📝 Shop registration data:", {
+      tenCuaHang,
+      diaChi,
+      soDienThoai,
+    });
+    console.log("📎 Uploaded files:", req.files);
+
+    // Validate
     if (!tenCuaHang || !diaChi || !soDienThoai) {
       return res.status(400).json({ message: "Missing required text fields" });
     }
 
-    // Validate required files (sau multer)
     if (
       !req.files?.giayPhepKD ||
       !req.files?.cccdMatTruoc ||
@@ -22,7 +25,7 @@ async function registerShop(req, res, next) {
       return res.status(400).json({ message: "Missing required documents" });
     }
 
-    // Check xem user này có shop chưa
+    // Check existing shop
     const existingShop = await CuaHang.findOne({
       where: { nguoiDaiDien: maNguoiDung },
     });
@@ -30,25 +33,30 @@ async function registerShop(req, res, next) {
       return res.status(400).json({ message: "You already have a shop" });
     }
 
-    // Tạo cửa hàng
-    const shop = await CuaHang.create({
+    // ⭐ Tạo đường dẫn file - CHỈ LƯU FILENAME
+    const shopData = {
       tenCuaHang,
       diaChi,
       soDienThoai,
-      moTa,
-      kinhDo,
-      viDo,
+      moTa: moTa || null,
+      kinhDo: kinhDo || null,
+      viDo: viDo || null,
       nguoiDaiDien: maNguoiDung,
       trangThai: "CHO_DUYET",
       ngayTao: new Date(),
-      // Files sẽ được handle bởi upload middleware
-      giayPhepKD: req.files.giayPhepKD[0].path || null, // Không cần ?.[0] vì đã validate
-      cccdMatTruoc: req.files.cccdMatTruoc[0].path || null,
-      cccdMatSau: req.files.cccdMatSau[0].path || null,
-      anhCuaHang: req.files.anhCuaHang?.[0]?.path || null,
-    });
+      giayPhepKD: `/uploads/${req.files.giayPhepKD[0].filename}`,
+      cccdMatTruoc: `/uploads/${req.files.cccdMatTruoc[0].filename}`,
+      cccdMatSau: `/uploads/${req.files.cccdMatSau[0].filename}`,
+      anhCuaHang: req.files.anhCuaHang?.[0]?.filename
+        ? `/uploads/${req.files.anhCuaHang[0].filename}`
+        : null,
+    };
 
-    // Cập nhật user role thành CHU_CUA_HANG
+    console.log("💾 Saving shop with data:", shopData);
+
+    const shop = await CuaHang.create(shopData);
+
+    // Cập nhật role
     const ownerRole = await VaiTro.findOne({
       where: { tenVaiTro: "CHU_CUA_HANG" },
     });
@@ -61,11 +69,14 @@ async function registerShop(req, res, next) {
       { where: { maNguoiDung } }
     );
 
+    console.log("✅ Shop registered successfully:", shop.maCuaHang);
+
     res.status(201).json({
       message: "Shop registered successfully",
       data: shop,
     });
   } catch (err) {
+    console.error("❌ Register shop error:", err);
     next(err);
   }
 }

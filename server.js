@@ -1,5 +1,14 @@
 const dotenv = require("dotenv");
+const fs = require("fs"); // Thêm dòng này
+const path = require("path"); // Thêm dòng này
 dotenv.config();
+
+// ⭐ Tạo folder uploads nếu chưa có
+const uploadsDir = path.join(__dirname, "uploads");
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+  console.log("📁 Created uploads directory");
+}
 
 console.log("🚀 Starting server...");
 console.log("📝 Environment variables loaded");
