@@ -284,17 +284,28 @@ async function deleteShop(req, res, next) {
   }
 }
 
-// Duyệt cửa hàng
+// Duyệt cửa hàng - CẬP NHẬT
 async function approveShop(req, res, next) {
   try {
     const shop = await CuaHang.findByPk(req.params.id);
     if (!shop) return res.status(404).json({ message: "Shop not found" });
 
+    // Cập nhật trạng thái shop
     await shop.update({
       trangThai: "HOAT_DONG",
     });
 
-    res.json({ message: "Shop approved", data: shop });
+    // ⭐ Cập nhật maCuaHang cho user (KHÔNG đổi role)
+    await NguoiDung.update(
+      { maCuaHang: shop.maCuaHang },
+      { where: { maNguoiDung: shop.nguoiDaiDien } }
+    );
+
+    console.log(
+      `✅ Shop ${shop.maCuaHang} approved. User ${shop.nguoiDaiDien} now owns this shop.`
+    );
+
+    res.json({ message: "Shop approved successfully", data: shop });
   } catch (err) {
     next(err);
   }

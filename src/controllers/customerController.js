@@ -1,3 +1,4 @@
+// src/controllers/customerController.js
 const { CuaHang, NguoiDung, VaiTro } = require("../models");
 
 async function registerShop(req, res, next) {
@@ -33,7 +34,6 @@ async function registerShop(req, res, next) {
       return res.status(400).json({ message: "You already have a shop" });
     }
 
-    // ⭐ Tạo đường dẫn file - CHỈ LƯU FILENAME
     const shopData = {
       tenCuaHang,
       diaChi,
@@ -56,23 +56,14 @@ async function registerShop(req, res, next) {
 
     const shop = await CuaHang.create(shopData);
 
-    // Cập nhật role
-    const ownerRole = await VaiTro.findOne({
-      where: { tenVaiTro: "CHU_CUA_HANG" },
-    });
-
-    await NguoiDung.update(
-      {
-        maVaiTro: ownerRole.maVaiTro,
-        maCuaHang: shop.maCuaHang,
-      },
-      { where: { maNguoiDung } }
-    );
+    // ⭐ QUAN TRỌNG: KHÔNG đổi role, chỉ cập nhật maCuaHang
+    // Người dùng vẫn giữ role KHACH_HANG nhưng có maCuaHang
+    // Khi shop được duyệt, admin sẽ update maCuaHang cho user
 
     console.log("✅ Shop registered successfully:", shop.maCuaHang);
 
     res.status(201).json({
-      message: "Shop registered successfully",
+      message: "Shop registered successfully. Waiting for approval.",
       data: shop,
     });
   } catch (err) {
