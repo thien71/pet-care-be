@@ -1,3 +1,4 @@
+// src/models/index.js (UPDATED)
 const { Sequelize } = require("sequelize");
 const sequelize = require("../config/db");
 
@@ -7,6 +8,7 @@ const LoaiThuCung = require("./LoaiThuCung");
 const GoiThanhToan = require("./GoiThanhToan");
 const CuaHang = require("./CuaHang");
 const NguoiDung = require("./NguoiDung");
+const NguoiDungVaiTro = require("./NguoiDungVaiTro"); // ⭐ NEW
 const HoSoNhanVien = require("./HoSoNhanVien");
 const DichVuHeThong = require("./DichVuHeThong");
 const DichVuCuaShop = require("./DichVuCuaShop");
@@ -20,12 +22,22 @@ const ThongBao = require("./ThongBao");
 const ThanhToanShop = require("./ThanhToanShop");
 const DanhGia = require("./DanhGia");
 
-// THEN define all associations
 console.log("🔗 Defining model associations...");
 
-// VaiTro - NguoiDung
-NguoiDung.belongsTo(VaiTro, { foreignKey: "maVaiTro" });
-VaiTro.hasMany(NguoiDung, { foreignKey: "maVaiTro" });
+// ⭐ VaiTro - NguoiDung (MANY-TO-MANY qua bảng trung gian)
+NguoiDung.belongsToMany(VaiTro, {
+  through: NguoiDungVaiTro,
+  foreignKey: "maNguoiDung",
+  otherKey: "maVaiTro",
+  as: "VaiTros", // Đổi tên để rõ ràng là nhiều vai trò
+});
+
+VaiTro.belongsToMany(NguoiDung, {
+  through: NguoiDungVaiTro,
+  foreignKey: "maVaiTro",
+  otherKey: "maNguoiDung",
+  as: "NguoiDungs",
+});
 
 // CuaHang - NguoiDung
 NguoiDung.belongsTo(CuaHang, { foreignKey: "maCuaHang" });
@@ -78,7 +90,7 @@ LichHenChiTiet.belongsTo(DichVuCuaShop, { foreignKey: "maDichVuCuaShop" });
 DichVuCuaShop.hasMany(LichHenChiTiet, { foreignKey: "maDichVuCuaShop" });
 
 // GanCaLamViec associations
-GanCaLamViec.belongsTo(NguoiDung, { foreignKey: "maNhanVien" });
+GanCaLamViec.belongsTo(NguoiDung, { foreignKey: "maNhanVien", as: "NhanVien" });
 GanCaLamViec.belongsTo(CuaHang, { foreignKey: "maCuaHang" });
 GanCaLamViec.belongsTo(CaLamViec, { foreignKey: "maCa" });
 
@@ -107,6 +119,7 @@ module.exports = {
   GoiThanhToan,
   CuaHang,
   NguoiDung,
+  NguoiDungVaiTro, // ⭐ NEW
   HoSoNhanVien,
   DichVuHeThong,
   DichVuCuaShop,

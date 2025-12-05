@@ -1,3 +1,4 @@
+// src/models/NguoiDung.js (UPDATED - Xóa maVaiTro)
 const { DataTypes } = require("sequelize");
 const sequelize = require("../config/db");
 
@@ -15,7 +16,7 @@ const NguoiDung = sequelize.define(
     soDienThoai: { type: DataTypes.STRING(20) },
     diaChi: { type: DataTypes.STRING(255) },
     avatar: { type: DataTypes.STRING(255) },
-    maVaiTro: { type: DataTypes.INTEGER, allowNull: false },
+    // ❌ Xóa field maVaiTro - giờ dùng many-to-many relationship
     maCuaHang: { type: DataTypes.INTEGER },
     trangThai: { type: DataTypes.TINYINT, defaultValue: 1 },
     ngayTao: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },

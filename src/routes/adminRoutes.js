@@ -17,6 +17,14 @@ router.get("/users/:id", adminOnly, adminController.getUserById);
 router.put("/users/:id", adminOnly, adminController.updateUser);
 router.delete("/users/:id", adminOnly, adminController.deleteUser);
 
+// ⭐ NEW: Role management
+router.post("/users/add-role", adminOnly, adminController.addRoleToUser);
+router.post(
+  "/users/remove-role",
+  adminOnly,
+  adminController.removeRoleFromUser
+);
+
 // Vai Trò
 router.get("/roles", adminOnly, adminController.getRoles);
 router.post("/roles", adminOnly, adminController.createRole);

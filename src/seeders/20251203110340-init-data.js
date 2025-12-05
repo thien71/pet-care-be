@@ -1,9 +1,10 @@
+// src/seeders/20251203120000-init-data-many-roles.js
 "use strict";
-const bcrypt = require("bcrypt"); // Giả định đã install bcrypt: npm install bcrypt
+const bcrypt = require("bcrypt");
 
 module.exports = {
   async up(queryInterface, Sequelize) {
-    // Insert VaiTro
+    // 1. Insert VaiTro
     await queryInterface.bulkInsert(
       "VaiTro",
       [
@@ -16,7 +17,16 @@ module.exports = {
       {}
     );
 
-    // Insert LoaiThuCung
+    // Query to get maVaiTro for each tenVaiTro
+    const vaiTroMap = {};
+    const [vaiTroRows] = await queryInterface.sequelize.query(
+      "SELECT maVaiTro, tenVaiTro FROM VaiTro"
+    );
+    vaiTroRows.forEach((row) => {
+      vaiTroMap[row.tenVaiTro] = row.maVaiTro;
+    });
+
+    // 2. Insert LoaiThuCung
     await queryInterface.bulkInsert(
       "LoaiThuCung",
       [
@@ -30,7 +40,7 @@ module.exports = {
       {}
     );
 
-    // Insert GoiThanhToan
+    // 3. Insert GoiThanhToan
     await queryInterface.bulkInsert(
       "GoiThanhToan",
       [
@@ -41,7 +51,7 @@ module.exports = {
       {}
     );
 
-    // Insert DichVuHeThong
+    // 4. Insert DichVuHeThong
     await queryInterface.bulkInsert(
       "DichVuHeThong",
       [
@@ -79,7 +89,7 @@ module.exports = {
       {}
     );
 
-    // Insert CaLamViec
+    // 5. Insert CaLamViec
     await queryInterface.bulkInsert(
       "CaLamViec",
       [
@@ -90,114 +100,63 @@ module.exports = {
       {}
     );
 
-    // Lấy maVaiTro cho từng role
-    const [khachHangRole] = await queryInterface.sequelize.query(
-      'SELECT maVaiTro FROM VaiTro WHERE tenVaiTro = "KHACH_HANG"'
+    // Insert Admin
+    await queryInterface.sequelize.query(
+      `INSERT INTO NguoiDung (hoTen, email, matKhau, soDienThoai, diaChi, trangThai) VALUES 
+      ('Admin User', 'admin@petcare.com', '${bcrypt.hashSync(
+        "admin123",
+        10
+      )}', '0900000001', 'Da Nang', 1)`
     );
-    const khachHangId = khachHangRole[0].maVaiTro;
-
-    const [adminRole] = await queryInterface.sequelize.query(
-      'SELECT maVaiTro FROM VaiTro WHERE tenVaiTro = "QUAN_TRI_VIEN"'
+    const [[{ id: adminId }]] = await queryInterface.sequelize.query(
+      "SELECT LAST_INSERT_ID() as id"
     );
-    const adminId = adminRole[0].maVaiTro;
 
-    const [chuCuaHangRole] = await queryInterface.sequelize.query(
-      'SELECT maVaiTro FROM VaiTro WHERE tenVaiTro = "CHU_CUA_HANG"'
-    );
-    const chuCuaHangId = chuCuaHangRole[0].maVaiTro;
-
-    const [leTanRole] = await queryInterface.sequelize.query(
-      'SELECT maVaiTro FROM VaiTro WHERE tenVaiTro = "LE_TAN"'
-    );
-    const leTanId = leTanRole[0].maVaiTro;
-
-    const [kyThuatVienRole] = await queryInterface.sequelize.query(
-      'SELECT maVaiTro FROM VaiTro WHERE tenVaiTro = "KY_THUAT_VIEN"'
-    );
-    const kyThuatVienId = kyThuatVienRole[0].maVaiTro;
-
-    // Hash password mặc định: 'password123'
-    const hashedPassword = bcrypt.hashSync("password123", 10);
-
-    // Insert 1 Admin
-    await queryInterface.bulkInsert("NguoiDung", [
-      {
-        hoTen: "Admin User",
-        email: "admin@example.com",
-        matKhau: hashedPassword,
-        soDienThoai: "0123456789",
-        diaChi: "Da Nang",
-        maVaiTro: adminId,
-        trangThai: 1,
-      },
-    ]);
-
-    // Insert 10 Khách hàng (KHACH_HANG)
-    const customers = [];
-    for (let i = 1; i <= 10; i++) {
-      customers.push({
-        hoTen: `Customer ${i}`,
-        email: `customer${i}@example.com`,
-        matKhau: hashedPassword,
-        soDienThoai: `090${i}000000`,
-        diaChi: `Address ${i}, Da Nang`,
-        maVaiTro: khachHangId,
-        trangThai: 1,
-      });
-    }
-    await queryInterface.bulkInsert("NguoiDung", customers);
-
-    // Insert 3 Chủ cửa hàng (CHU_CUA_HANG)
-    const owners = [];
+    // Insert Customers (3 for minimal)
+    const customerIds = [];
     for (let i = 1; i <= 3; i++) {
-      owners.push({
-        hoTen: `Owner ${i}`,
-        email: `owner${i}@example.com`,
-        matKhau: hashedPassword,
-        soDienThoai: `091${i}000000`,
-        diaChi: `Shop Address ${i}`,
-        maVaiTro: chuCuaHangId,
-        trangThai: 1,
-      });
+      await queryInterface.sequelize.query(
+        `INSERT INTO NguoiDung (hoTen, email, matKhau, soDienThoai, diaChi, trangThai) VALUES 
+        ('Khách hàng ${i}', 'customer${i}@petcare.com', '${bcrypt.hashSync(
+          "cust123",
+          10
+        )}', '090${i.toString().padStart(7, "0")}', 'Địa chỉ ${i}, Đà Nẵng', 1)`
+      );
+      const [[{ id }]] = await queryInterface.sequelize.query(
+        "SELECT LAST_INSERT_ID() as id"
+      );
+      customerIds.push(id);
     }
-    await queryInterface.bulkInsert("NguoiDung", owners);
 
-    // Insert 3 Lễ tân (LE_TAN)
-    const receptionists = [];
-    for (let i = 1; i <= 3; i++) {
-      receptionists.push({
-        hoTen: `Receptionist ${i}`,
-        email: `receptionist${i}@example.com`,
-        matKhau: hashedPassword,
-        soDienThoai: `092${i}000000`,
-        diaChi: `Staff Address ${i}`,
-        maVaiTro: leTanId,
-        trangThai: 1,
-      });
-    }
-    await queryInterface.bulkInsert("NguoiDung", receptionists);
+    // 6. Insert NguoiDungVaiTro
+    const nguoiDungVaiTro = [];
 
-    // Insert 3 Kỹ thuật viên (KY_THUAT_VIEN)
-    const technicians = [];
-    for (let i = 1; i <= 3; i++) {
-      technicians.push({
-        hoTen: `Technician ${i}`,
-        email: `technician${i}@example.com`,
-        matKhau: hashedPassword,
-        soDienThoai: `093${i}000000`,
-        diaChi: `Staff Address ${i + 3}`,
-        maVaiTro: kyThuatVienId,
-        trangThai: 1,
+    // Admin: QUAN_TRI_VIEN
+    nguoiDungVaiTro.push({
+      maNguoiDung: adminId,
+      maVaiTro: vaiTroMap["QUAN_TRI_VIEN"],
+    });
+
+    // Customers: KHACH_HANG
+    customerIds.forEach((id) => {
+      nguoiDungVaiTro.push({
+        maNguoiDung: id,
+        maVaiTro: vaiTroMap["KHACH_HANG"],
       });
-    }
-    await queryInterface.bulkInsert("NguoiDung", technicians);
+    });
+
+    await queryInterface.bulkInsert("NguoiDungVaiTro", nguoiDungVaiTro);
+
+    console.log("✅ Seeded data successfully with minimal roles!");
   },
+
   async down(queryInterface, Sequelize) {
+    await queryInterface.bulkDelete("NguoiDungVaiTro", null, {});
     await queryInterface.bulkDelete("NguoiDung", null, {});
-    await queryInterface.bulkDelete("VaiTro", null, {});
-    await queryInterface.bulkDelete("LoaiThuCung", null, {});
-    await queryInterface.bulkDelete("GoiThanhToan", null, {});
-    await queryInterface.bulkDelete("DichVuHeThong", null, {});
     await queryInterface.bulkDelete("CaLamViec", null, {});
+    await queryInterface.bulkDelete("DichVuHeThong", null, {});
+    await queryInterface.bulkDelete("GoiThanhToan", null, {});
+    await queryInterface.bulkDelete("LoaiThuCung", null, {});
+    await queryInterface.bulkDelete("VaiTro", null, {});
   },
 };

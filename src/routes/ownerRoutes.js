@@ -1,13 +1,18 @@
-// src/routes/ownerRoutes.js (Backend)
+// src/routes/ownerRoutes.js (FIXED)
 const express = require("express");
 const router = express.Router();
 const { verifyToken, checkRole } = require("../middlewares/authMiddlewares");
 const ownerController = require("../controllers/ownerController");
 
-// Middleware: Chỉ cho phép Owner
+// ⭐ Debug: Kiểm tra controller có đầy đủ functions không
+console.log("🔍 Owner Controller functions:", Object.keys(ownerController));
+
+// Middleware: Chỉ cho phép Owner hoặc Customer có shop
 const ownerOnly = (req, res, next) => {
   verifyToken(req, res, () => {
+    // ⭐ UPDATED: Cho phép cả KHACH_HANG nếu có shop
     checkRole(["CHU_CUA_HANG"])(req, res, next);
+    // checkRole(["CHU_CUA_HANG", "KHACH_HANG"])(req, res, next);
   });
 };
 

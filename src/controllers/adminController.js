@@ -2,6 +2,7 @@
 const {
   NguoiDung,
   VaiTro,
+  NguoiDungVaiTro,
   LoaiThuCung,
   DichVuHeThong,
   CuaHang,
@@ -15,7 +16,13 @@ const bcrypt = require("bcrypt");
 async function getUsers(req, res, next) {
   try {
     const users = await NguoiDung.findAll({
-      include: [VaiTro],
+      include: [
+        {
+          model: VaiTro,
+          as: "VaiTros", // ⭐ Đổi tên
+          through: { attributes: [] },
+        },
+      ],
       attributes: { exclude: ["matKhau"] },
     });
     res.json({ data: users });
@@ -27,7 +34,13 @@ async function getUsers(req, res, next) {
 async function getUserById(req, res, next) {
   try {
     const user = await NguoiDung.findByPk(req.params.id, {
-      include: [VaiTro],
+      include: [
+        {
+          model: VaiTro,
+          as: "VaiTros",
+          through: { attributes: [] },
+        },
+      ],
       attributes: { exclude: ["matKhau"] },
     });
     if (!user) return res.status(404).json({ message: "User not found" });
@@ -37,14 +50,104 @@ async function getUserById(req, res, next) {
   }
 }
 
+/**
+ * ⭐ UPDATE USER - Bao gồm cả cập nhật vai trò
+ */
 async function updateUser(req, res, next) {
   try {
-    const { hoTen, soDienThoai, diaChi, maVaiTro } = req.body;
+    const { hoTen, soDienThoai, diaChi, vaiTros } = req.body;
     const user = await NguoiDung.findByPk(req.params.id);
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    await user.update({ hoTen, soDienThoai, diaChi, maVaiTro });
-    res.json({ message: "User updated", data: user });
+    // Cập nhật thông tin cơ bản
+    await user.update({ hoTen, soDienThoai, diaChi });
+
+    // ⭐ Nếu có update vai trò
+    if (vaiTros && Array.isArray(vaiTros)) {
+      // Xóa tất cả vai trò cũ
+      await NguoiDungVaiTro.destroy({
+        where: { maNguoiDung: req.params.id },
+      });
+
+      // Thêm vai trò mới
+      const roleAssignments = vaiTros.map((maVaiTro) => ({
+        maNguoiDung: user.maNguoiDung,
+        maVaiTro,
+      }));
+
+      await NguoiDungVaiTro.bulkCreate(roleAssignments);
+    }
+
+    // Reload user với vai trò mới
+    const updatedUser = await NguoiDung.findByPk(req.params.id, {
+      include: [
+        {
+          model: VaiTro,
+          as: "VaiTros",
+          through: { attributes: [] },
+        },
+      ],
+      attributes: { exclude: ["matKhau"] },
+    });
+
+    res.json({ message: "User updated", data: updatedUser });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/**
+ * ⭐ API MỚI: Thêm vai trò cho user
+ */
+async function addRoleToUser(req, res, next) {
+  try {
+    const { userId, roleId } = req.body;
+
+    // Check user exists
+    const user = await NguoiDung.findByPk(userId);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    // Check role exists
+    const role = await VaiTro.findByPk(roleId);
+    if (!role) return res.status(404).json({ message: "Role not found" });
+
+    // Check if already assigned
+    const existing = await NguoiDungVaiTro.findOne({
+      where: { maNguoiDung: userId, maVaiTro: roleId },
+    });
+
+    if (existing) {
+      return res.status(400).json({ message: "Role already assigned" });
+    }
+
+    // Assign role
+    await NguoiDungVaiTro.create({
+      maNguoiDung: userId,
+      maVaiTro: roleId,
+    });
+
+    res.json({ message: "Role added successfully" });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/**
+ * ⭐ API MỚI: Xóa vai trò khỏi user
+ */
+async function removeRoleFromUser(req, res, next) {
+  try {
+    const { userId, roleId } = req.body;
+
+    const deleted = await NguoiDungVaiTro.destroy({
+      where: { maNguoiDung: userId, maVaiTro: roleId },
+    });
+
+    if (deleted === 0) {
+      return res.status(404).json({ message: "Role assignment not found" });
+    }
+
+    res.json({ message: "Role removed successfully" });
   } catch (err) {
     next(err);
   }
@@ -290,19 +393,35 @@ async function approveShop(req, res, next) {
     const shop = await CuaHang.findByPk(req.params.id);
     if (!shop) return res.status(404).json({ message: "Shop not found" });
 
-    // Cập nhật trạng thái shop
+    // 1. Cập nhật trạng thái shop
     await shop.update({
       trangThai: "HOAT_DONG",
     });
 
-    // ⭐ Cập nhật maCuaHang cho user (KHÔNG đổi role)
+    // 2. Cập nhật maCuaHang cho user
     await NguoiDung.update(
       { maCuaHang: shop.maCuaHang },
       { where: { maNguoiDung: shop.nguoiDaiDien } }
     );
 
+    // ⭐ 3. THÊM VAI TRÒ CHU_CUA_HANG cho user (nếu chưa có)
+    const existingRole = await NguoiDungVaiTro.findOne({
+      where: {
+        maNguoiDung: shop.nguoiDaiDien,
+        maVaiTro: 3, // CHU_CUA_HANG
+      },
+    });
+
+    if (!existingRole) {
+      await NguoiDungVaiTro.create({
+        maNguoiDung: shop.nguoiDaiDien,
+        maVaiTro: 3, // CHU_CUA_HANG
+      });
+      console.log(`✅ Added CHU_CUA_HANG role to user ${shop.nguoiDaiDien}`);
+    }
+
     console.log(
-      `✅ Shop ${shop.maCuaHang} approved. User ${shop.nguoiDaiDien} now owns this shop.`
+      `✅ Shop ${shop.maCuaHang} approved. User ${shop.nguoiDaiDien} now has KHACH_HANG + CHU_CUA_HANG roles.`
     );
 
     res.json({ message: "Shop approved successfully", data: shop });
@@ -470,22 +589,33 @@ async function rejectPayment(req, res, next) {
 }
 
 module.exports = {
+  // Users
   getUsers,
   getUserById,
   updateUser,
   deleteUser,
+  addRoleToUser,
+  removeRoleFromUser,
+
+  // Roles
   getRoles,
   createRole,
   updateRole,
   deleteRole,
+
+  // Pet Types
   getPetTypes,
   createPetType,
   updatePetType,
   deletePetType,
+
+  // Services
   getServices,
   createService,
   updateService,
   deleteService,
+
+  // Shops
   getShops,
   getShopApprovals,
   getShopById,
@@ -493,13 +623,19 @@ module.exports = {
   deleteShop,
   approveShop,
   rejectShop,
+
+  // Service Proposals
   getServiceProposals,
   approveServiceProposal,
   rejectServiceProposal,
+
+  // Payment Packages
   getPaymentPackages,
   createPaymentPackage,
   updatePaymentPackage,
   deletePaymentPackage,
+
+  // Payment Confirmations
   getPaymentConfirmations,
   confirmPayment,
   rejectPayment,
