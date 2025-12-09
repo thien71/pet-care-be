@@ -42,4 +42,9 @@ router.get("/shifts", ownerOnly, ownerController.getShifts);
 router.post("/assign-shift", ownerOnly, ownerController.assignShift);
 router.delete("/shifts/:id", ownerOnly, ownerController.removeShift);
 
+// Thanh toán
+router.get("/payment-packages", ownerOnly, ownerController.getPaymentPackages);
+router.get("/my-payments", ownerOnly, ownerController.getMyPayments);
+router.post("/purchase-package", ownerOnly, ownerController.purchasePackage);
+
 module.exports = router;

@@ -1,4 +1,4 @@
-// src/controllers/ownerController.js (COMPLETE VERSION)
+// src/controllers/ownerController.js (FIXED VERSION)
 const {
   CuaHang,
   NguoiDung,
@@ -9,24 +9,14 @@ const {
   CaLamViec,
   DeXuatDichVu,
   VaiTro,
-  NguoiDungVaiTro, // ⭐ THÊM
+  NguoiDungVaiTro,
 } = require("../models");
 const bcrypt = require("bcrypt");
 
 // ==================== THÔNG TIN CỬA HÀNG ====================
 async function getShopInfo(req, res, next) {
   try {
-    // ⭐ UPDATED: Tìm shop qua roles
-    const user = await NguoiDung.findByPk(req.user.id, {
-      include: [
-        {
-          model: VaiTro,
-          as: "VaiTros",
-          through: { attributes: [] },
-        },
-      ],
-    });
-
+    const user = await NguoiDung.findByPk(req.user.id);
     if (!user || !user.maCuaHang) {
       return res.status(404).json({ message: "Shop not found" });
     }
@@ -88,7 +78,6 @@ async function getShopServices(req, res, next) {
       ],
     });
 
-    // Format lại data để frontend dễ sử dụng
     const formattedServices = services.map((s) => ({
       maDichVuShop: s.maDichVuShop,
       maDichVuHeThong: s.maDichVuHeThong,
@@ -115,7 +104,6 @@ async function addServiceToShop(req, res, next) {
       return res.status(404).json({ message: "Shop not found" });
     }
 
-    // Check xem đã add service này chưa
     const existing = await DichVuCuaShop.findOne({
       where: {
         maCuaHang: user.maCuaHang,
@@ -149,7 +137,6 @@ async function updateShopService(req, res, next) {
       return res.status(404).json({ message: "Service not found" });
     }
 
-    // Verify ownership
     const user = await NguoiDung.findByPk(req.user.id);
     if (service.maCuaHang !== user.maCuaHang) {
       return res.status(403).json({ message: "Not your shop" });
@@ -170,7 +157,6 @@ async function deleteShopService(req, res, next) {
       return res.status(404).json({ message: "Service not found" });
     }
 
-    // Verify ownership
     const user = await NguoiDung.findByPk(req.user.id);
     if (service.maCuaHang !== user.maCuaHang) {
       return res.status(403).json({ message: "Not your shop" });
@@ -208,6 +194,7 @@ async function proposeNewService(req, res, next) {
 }
 
 // ==================== NHÂN VIÊN ====================
+// ⭐ FIX: Lấy danh sách nhân viên KHÔNG BAO GỒM chủ shop
 async function getEmployees(req, res, next) {
   try {
     const user = await NguoiDung.findByPk(req.user.id);
@@ -215,24 +202,48 @@ async function getEmployees(req, res, next) {
       return res.status(404).json({ message: "Shop not found" });
     }
 
+    // ⭐ Lấy thông tin shop để biết người đại diện
+    const shop = await CuaHang.findByPk(user.maCuaHang);
+
     const employees = await NguoiDung.findAll({
-      where: { maCuaHang: user.maCuaHang },
+      where: {
+        maCuaHang: user.maCuaHang,
+      },
       include: [
         {
           model: VaiTro,
-          as: "VaiTros", // ⭐ UPDATED
+          as: "VaiTros",
           through: { attributes: [] },
+          attributes: ["maVaiTro", "tenVaiTro"],
         },
         {
           model: HoSoNhanVien,
-          attributes: ["kinhNghiem", "chungChi"],
+          attributes: ["kinhNghiem", "chungChi", "ngayVaoLam"],
         },
       ],
       attributes: { exclude: ["matKhau"] },
     });
 
-    res.json({ data: employees });
+    // ⭐ Loại bỏ chủ shop khỏi danh sách
+    const filteredEmployees = employees.filter(
+      (emp) => emp.maNguoiDung !== shop.nguoiDaiDien
+    );
+
+    // ⭐ Format data để frontend dễ dùng
+    const formattedEmployees = filteredEmployees.map((emp) => {
+      // Lấy vai trò đầu tiên (staff thường chỉ có 1 vai trò)
+      const primaryRole =
+        emp.VaiTros && emp.VaiTros.length > 0 ? emp.VaiTros[0] : null;
+
+      return {
+        ...emp.toJSON(),
+        VaiTro: primaryRole, // ⭐ Thêm field VaiTro (singular) để frontend dễ access
+      };
+    });
+
+    res.json({ data: formattedEmployees });
   } catch (err) {
+    console.error("❌ Get employees error:", err);
     next(err);
   }
 }
@@ -247,7 +258,6 @@ async function addEmployee(req, res, next) {
       return res.status(404).json({ message: "Shop not found" });
     }
 
-    // Check email duplicate
     const existingUser = await NguoiDung.findOne({ where: { email } });
     if (existingUser) {
       return res.status(400).json({ message: "Email already exists" });
@@ -260,7 +270,6 @@ async function addEmployee(req, res, next) {
         .json({ message: "Can only add staff roles (LE_TAN, KY_THUAT_VIEN)" });
     }
 
-    // Create password từ email
     const defaultPassword = email.split("@")[0] + "123";
     const hashedPassword = await bcrypt.hash(defaultPassword, 10);
 
@@ -273,17 +282,15 @@ async function addEmployee(req, res, next) {
       trangThai: 1,
     });
 
-    // ⭐ Gán vai trò cho nhân viên qua bảng NguoiDungVaiTro
     await NguoiDungVaiTro.create({
       maNguoiDung: newEmployee.maNguoiDung,
       maVaiTro,
     });
 
-    // Create HoSoNhanVien
     if (kinhNghiem || chungChi) {
       await HoSoNhanVien.create({
         maNguoiDung: newEmployee.maNguoiDung,
-        kinhNghiem,
+        kinhNghiem: kinhNghiem || 0,
         chungChi,
         ngayVaoLam: new Date(),
       });
@@ -293,7 +300,7 @@ async function addEmployee(req, res, next) {
       message: "Employee added",
       data: {
         ...newEmployee.dataValues,
-        defaultPassword, // Trả về password để owner thông báo cho nhân viên
+        defaultPassword,
       },
     });
   } catch (err) {
@@ -308,19 +315,19 @@ async function deleteEmployee(req, res, next) {
       return res.status(404).json({ message: "Employee not found" });
     }
 
-    // Verify ownership
     const currentUser = await NguoiDung.findByPk(req.user.id);
     if (user.maCuaHang !== currentUser.maCuaHang) {
       return res.status(403).json({ message: "Not your employee" });
     }
 
-    // Delete HoSoNhanVien first
+    // ⭐ Kiểm tra không cho xóa chủ shop
+    const shop = await CuaHang.findByPk(currentUser.maCuaHang);
+    if (user.maNguoiDung === shop.nguoiDaiDien) {
+      return res.status(403).json({ message: "Cannot delete shop owner" });
+    }
+
     await HoSoNhanVien.destroy({ where: { maNguoiDung: req.params.id } });
-
-    // Delete role assignments
     await NguoiDungVaiTro.destroy({ where: { maNguoiDung: req.params.id } });
-
-    // Then delete user
     await user.destroy();
 
     res.json({ message: "Employee deleted" });
@@ -367,13 +374,11 @@ async function assignShift(req, res, next) {
       return res.status(404).json({ message: "Shop not found" });
     }
 
-    // Check nhân viên thuộc shop này không
     const employee = await NguoiDung.findByPk(maNhanVien);
     if (!employee || employee.maCuaHang !== currentUser.maCuaHang) {
       return res.status(403).json({ message: "Employee not in your shop" });
     }
 
-    // Check duplicate shift
     const existing = await GanCaLamViec.findOne({
       where: {
         maNhanVien,
@@ -406,7 +411,6 @@ async function removeShift(req, res, next) {
       return res.status(404).json({ message: "Shift not found" });
     }
 
-    // Verify ownership
     const user = await NguoiDung.findByPk(req.user.id);
     if (shift.maCuaHang !== user.maCuaHang) {
       return res.status(403).json({ message: "Not your shift" });
@@ -419,7 +423,80 @@ async function removeShift(req, res, next) {
   }
 }
 
-// ⭐ CRITICAL: EXPORT TẤT CẢ FUNCTIONS
+// ==================== THANH TOÁN ====================
+async function getPaymentPackages(req, res, next) {
+  try {
+    const packages = await GoiThanhToan.findAll();
+    res.json({ data: packages });
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function getMyPayments(req, res, next) {
+  try {
+    const user = await NguoiDung.findByPk(req.user.id);
+    if (!user || !user.maCuaHang) {
+      return res.status(404).json({ message: "Shop not found" });
+    }
+
+    const payments = await ThanhToanShop.findAll({
+      where: { maCuaHang: user.maCuaHang },
+      include: [
+        {
+          model: GoiThanhToan,
+          attributes: ["tenGoi", "soTien", "thoiGian"],
+        },
+      ],
+      order: [["ngayTao", "DESC"]],
+    });
+
+    res.json({ data: payments });
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function purchasePackage(req, res, next) {
+  try {
+    const { maGoi } = req.body;
+
+    const user = await NguoiDung.findByPk(req.user.id);
+    if (!user || !user.maCuaHang) {
+      return res.status(404).json({ message: "Shop not found" });
+    }
+
+    // Check package exists
+    const pkg = await GoiThanhToan.findByPk(maGoi);
+    if (!pkg) {
+      return res.status(404).json({ message: "Package not found" });
+    }
+
+    // Tính thời gian
+    const thoiGianBatDau = new Date();
+    const thoiGianKetThuc = new Date();
+    thoiGianKetThuc.setMonth(thoiGianKetThuc.getMonth() + pkg.thoiGian);
+
+    // Tạo thanh toán mới
+    const payment = await ThanhToanShop.create({
+      maCuaHang: user.maCuaHang,
+      maGoi,
+      soTien: pkg.soTien,
+      thoiGianBatDau,
+      thoiGianKetThuc,
+      trangThai: "CHUA_THANH_TOAN",
+      ngayTao: new Date(),
+    });
+
+    res.status(201).json({
+      message: "Package registered successfully",
+      data: payment,
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
 module.exports = {
   getShopInfo,
   updateShopInfo,
@@ -435,4 +512,7 @@ module.exports = {
   getShifts,
   assignShift,
   removeShift,
+  getPaymentPackages,
+  getMyPayments,
+  purchasePackage,
 };

@@ -1,4 +1,4 @@
-// src/controllers/adminController.js (Backend)
+// src/controllers/adminController.js (FIXED VERSION)
 const {
   NguoiDung,
   VaiTro,
@@ -13,20 +13,63 @@ const {
 const bcrypt = require("bcrypt");
 
 // ==================== NGƯỜI DÙNG ====================
+// ⭐ FIX: Format VaiTro đúng cách
 async function getUsers(req, res, next) {
   try {
     const users = await NguoiDung.findAll({
       include: [
         {
           model: VaiTro,
-          as: "VaiTros", // ⭐ Đổi tên
+          as: "VaiTros",
           through: { attributes: [] },
+          attributes: ["maVaiTro", "tenVaiTro"],
+        },
+        {
+          model: CuaHang,
+          attributes: ["tenCuaHang"],
         },
       ],
       attributes: { exclude: ["matKhau"] },
     });
-    res.json({ data: users });
+
+    // ⭐ Format data để frontend dễ dùng
+    const formattedUsers = users.map((user) => {
+      // Lấy vai trò primary (ưu tiên: Admin > Owner > Staff > Customer)
+      let primaryRole = null;
+      if (user.VaiTros && user.VaiTros.length > 0) {
+        const roleOrder = [
+          "QUAN_TRI_VIEN",
+          "CHU_CUA_HANG",
+          "LE_TAN",
+          "KY_THUAT_VIEN",
+          "KHACH_HANG",
+        ];
+        for (const roleName of roleOrder) {
+          const found = user.VaiTros.find((r) => r.tenVaiTro === roleName);
+          if (found) {
+            primaryRole = found;
+            break;
+          }
+        }
+        // Nếu không tìm thấy trong order, lấy role đầu tiên
+        if (!primaryRole) {
+          primaryRole = user.VaiTros[0];
+        }
+      }
+
+      return {
+        ...user.toJSON(),
+        VaiTro: primaryRole, // ⭐ Thêm field VaiTro (singular)
+        allRoles: user.VaiTros, // Giữ tất cả vai trò
+      };
+    });
+
+    // ⭐ Option: Loại bỏ admin hiện tại (có thể bật/tắt)
+    // const filteredUsers = formattedUsers.filter(u => u.maNguoiDung !== req.user.id);
+
+    res.json({ data: formattedUsers });
   } catch (err) {
+    console.error("❌ Get users error:", err);
     next(err);
   }
 }
@@ -50,26 +93,19 @@ async function getUserById(req, res, next) {
   }
 }
 
-/**
- * ⭐ UPDATE USER - Bao gồm cả cập nhật vai trò
- */
 async function updateUser(req, res, next) {
   try {
     const { hoTen, soDienThoai, diaChi, vaiTros } = req.body;
     const user = await NguoiDung.findByPk(req.params.id);
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    // Cập nhật thông tin cơ bản
     await user.update({ hoTen, soDienThoai, diaChi });
 
-    // ⭐ Nếu có update vai trò
     if (vaiTros && Array.isArray(vaiTros)) {
-      // Xóa tất cả vai trò cũ
       await NguoiDungVaiTro.destroy({
         where: { maNguoiDung: req.params.id },
       });
 
-      // Thêm vai trò mới
       const roleAssignments = vaiTros.map((maVaiTro) => ({
         maNguoiDung: user.maNguoiDung,
         maVaiTro,
@@ -78,7 +114,6 @@ async function updateUser(req, res, next) {
       await NguoiDungVaiTro.bulkCreate(roleAssignments);
     }
 
-    // Reload user với vai trò mới
     const updatedUser = await NguoiDung.findByPk(req.params.id, {
       include: [
         {
@@ -96,22 +131,16 @@ async function updateUser(req, res, next) {
   }
 }
 
-/**
- * ⭐ API MỚI: Thêm vai trò cho user
- */
 async function addRoleToUser(req, res, next) {
   try {
     const { userId, roleId } = req.body;
 
-    // Check user exists
     const user = await NguoiDung.findByPk(userId);
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    // Check role exists
     const role = await VaiTro.findByPk(roleId);
     if (!role) return res.status(404).json({ message: "Role not found" });
 
-    // Check if already assigned
     const existing = await NguoiDungVaiTro.findOne({
       where: { maNguoiDung: userId, maVaiTro: roleId },
     });
@@ -120,7 +149,6 @@ async function addRoleToUser(req, res, next) {
       return res.status(400).json({ message: "Role already assigned" });
     }
 
-    // Assign role
     await NguoiDungVaiTro.create({
       maNguoiDung: userId,
       maVaiTro: roleId,
@@ -132,9 +160,6 @@ async function addRoleToUser(req, res, next) {
   }
 }
 
-/**
- * ⭐ API MỚI: Xóa vai trò khỏi user
- */
 async function removeRoleFromUser(req, res, next) {
   try {
     const { userId, roleId } = req.body;
@@ -157,6 +182,11 @@ async function deleteUser(req, res, next) {
   try {
     const user = await NguoiDung.findByPk(req.params.id);
     if (!user) return res.status(404).json({ message: "User not found" });
+
+    // ⭐ Không cho xóa chính mình
+    if (user.maNguoiDung === req.user.id) {
+      return res.status(403).json({ message: "Cannot delete yourself" });
+    }
 
     await user.destroy();
     res.json({ message: "User deleted" });
@@ -310,14 +340,23 @@ async function deleteService(req, res, next) {
 // ==================== CỬA HÀNG ====================
 async function getShops(req, res, next) {
   try {
+    const { trangThai } = req.query;
+
+    const whereClause = {};
+    if (trangThai) {
+      whereClause.trangThai = trangThai;
+    }
+
     const shops = await CuaHang.findAll({
+      where: whereClause,
       include: [
         {
           model: NguoiDung,
           as: "NguoiDaiDien",
-          attributes: ["hoTen", "email"],
+          attributes: ["hoTen", "email", "soDienThoai"],
         },
       ],
+      order: [["ngayTao", "DESC"]],
     });
     res.json({ data: shops });
   } catch (err) {
@@ -327,9 +366,9 @@ async function getShops(req, res, next) {
 
 async function getShopApprovals(req, res, next) {
   try {
-    // Giả định trạng thái chờ duyệt là 'CHO_DUYET'. Nếu khác, cần điều chỉnh dựa trên model CuaHang.
+    const { trangThai } = req.query;
     const pendingShops = await CuaHang.findAll({
-      where: { trangThai: "CHO_DUYET" },
+      where: { trangThai: trangThai || "CHO_DUYET" },
       include: [
         {
           model: NguoiDung,
@@ -364,11 +403,11 @@ async function getShopById(req, res, next) {
 
 async function updateShop(req, res, next) {
   try {
-    const { tenCuaHang, diaChi, trangThai } = req.body;
+    const { tenCuaHang, diaChi, soDienThoai, trangThai } = req.body;
     const shop = await CuaHang.findByPk(req.params.id);
     if (!shop) return res.status(404).json({ message: "Shop not found" });
 
-    await shop.update({ tenCuaHang, diaChi, trangThai });
+    await shop.update({ tenCuaHang, diaChi, soDienThoai, trangThai });
     res.json({ message: "Shop updated", data: shop });
   } catch (err) {
     next(err);
@@ -387,42 +426,31 @@ async function deleteShop(req, res, next) {
   }
 }
 
-// Duyệt cửa hàng - CẬP NHẬT
 async function approveShop(req, res, next) {
   try {
     const shop = await CuaHang.findByPk(req.params.id);
     if (!shop) return res.status(404).json({ message: "Shop not found" });
 
-    // 1. Cập nhật trạng thái shop
-    await shop.update({
-      trangThai: "HOAT_DONG",
-    });
+    await shop.update({ trangThai: "HOAT_DONG" });
 
-    // 2. Cập nhật maCuaHang cho user
     await NguoiDung.update(
       { maCuaHang: shop.maCuaHang },
       { where: { maNguoiDung: shop.nguoiDaiDien } }
     );
 
-    // ⭐ 3. THÊM VAI TRÒ CHU_CUA_HANG cho user (nếu chưa có)
     const existingRole = await NguoiDungVaiTro.findOne({
       where: {
         maNguoiDung: shop.nguoiDaiDien,
-        maVaiTro: 3, // CHU_CUA_HANG
+        maVaiTro: 3,
       },
     });
 
     if (!existingRole) {
       await NguoiDungVaiTro.create({
         maNguoiDung: shop.nguoiDaiDien,
-        maVaiTro: 3, // CHU_CUA_HANG
+        maVaiTro: 3,
       });
-      console.log(`✅ Added CHU_CUA_HANG role to user ${shop.nguoiDaiDien}`);
     }
-
-    console.log(
-      `✅ Shop ${shop.maCuaHang} approved. User ${shop.nguoiDaiDien} now has KHACH_HANG + CHU_CUA_HANG roles.`
-    );
 
     res.json({ message: "Shop approved successfully", data: shop });
   } catch (err) {
@@ -430,24 +458,14 @@ async function approveShop(req, res, next) {
   }
 }
 
-// Từ chối cửa hàng
 async function rejectShop(req, res, next) {
   try {
     const { lyDo } = req.body;
     const shop = await CuaHang.findByPk(req.params.id);
     if (!shop) return res.status(404).json({ message: "Shop not found" });
 
-    // Ghi lại lý do từ chối (có thể lưu vào DB bằng thêm field)
-    await shop.update({
-      trangThai: "BI_KHOA", // Hoặc tạo status mới "TU_CHOI"
-    });
-
-    // TODO: Gửi email thông báo cho owner
-
-    res.json({
-      message: "Shop rejected",
-      data: shop,
-    });
+    await shop.update({ trangThai: "BI_KHOA" });
+    res.json({ message: "Shop rejected", data: shop });
   } catch (err) {
     next(err);
   }
@@ -456,11 +474,20 @@ async function rejectShop(req, res, next) {
 // ==================== ĐỀ XUẤT DỊCH VỤ ====================
 async function getServiceProposals(req, res, next) {
   try {
+    const { trangThai } = req.query;
+
+    const whereClause = {};
+    if (trangThai) {
+      whereClause.trangThai = trangThai;
+    }
+
     const proposals = await DeXuatDichVu.findAll({
+      where: whereClause,
       include: [
         { model: CuaHang, attributes: ["tenCuaHang"] },
         { model: NguoiDung, as: "QuanTriVien", attributes: ["hoTen"] },
       ],
+      order: [["ngayGui", "DESC"]],
     });
     res.json({ data: proposals });
   } catch (err) {
@@ -474,12 +501,23 @@ async function approveServiceProposal(req, res, next) {
     if (!proposal)
       return res.status(404).json({ message: "Proposal not found" });
 
+    // ⭐ Tạo dịch vụ hệ thống mới từ đề xuất
+    const newService = await DichVuHeThong.create({
+      tenDichVu: proposal.tenDichVu,
+      moTa: proposal.moTa,
+      trangThai: 1,
+    });
+
     await proposal.update({
       trangThai: "DA_DUYET",
       maQuanTriVien: req.user.id,
       ngayDuyet: new Date(),
     });
-    res.json({ message: "Proposal approved", data: proposal });
+
+    res.json({
+      message: "Proposal approved and service created",
+      data: { proposal, newService },
+    });
   } catch (err) {
     next(err);
   }
@@ -552,11 +590,20 @@ async function deletePaymentPackage(req, res, next) {
 // ==================== XÁC NHẬN THANH TOÁN ====================
 async function getPaymentConfirmations(req, res, next) {
   try {
+    const { trangThai } = req.query;
+
+    const whereClause = {};
+    if (trangThai) {
+      whereClause.trangThai = trangThai;
+    }
+
     const payments = await ThanhToanShop.findAll({
+      where: whereClause,
       include: [
         { model: CuaHang, attributes: ["tenCuaHang"] },
         { model: GoiThanhToan, attributes: ["tenGoi", "soTien"] },
       ],
+      order: [["ngayTao", "DESC"]],
     });
     res.json({ data: payments });
   } catch (err) {
@@ -589,7 +636,6 @@ async function rejectPayment(req, res, next) {
 }
 
 module.exports = {
-  // Users
   getUsers,
   getUserById,
   updateUser,
@@ -597,25 +643,21 @@ module.exports = {
   addRoleToUser,
   removeRoleFromUser,
 
-  // Roles
   getRoles,
   createRole,
   updateRole,
   deleteRole,
 
-  // Pet Types
   getPetTypes,
   createPetType,
   updatePetType,
   deletePetType,
 
-  // Services
   getServices,
   createService,
   updateService,
   deleteService,
 
-  // Shops
   getShops,
   getShopApprovals,
   getShopById,
@@ -624,18 +666,15 @@ module.exports = {
   approveShop,
   rejectShop,
 
-  // Service Proposals
   getServiceProposals,
   approveServiceProposal,
   rejectServiceProposal,
 
-  // Payment Packages
   getPaymentPackages,
   createPaymentPackage,
   updatePaymentPackage,
   deletePaymentPackage,
 
-  // Payment Confirmations
   getPaymentConfirmations,
   confirmPayment,
   rejectPayment,
