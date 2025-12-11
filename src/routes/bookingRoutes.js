@@ -1,8 +1,13 @@
-// src/routes/bookingRoutes.js
+// src/routes/bookingRoutes.js - UPDATED với Public Endpoints
 const express = require("express");
 const router = express.Router();
 const { verifyToken, checkRole } = require("../middlewares/authMiddlewares");
 const bookingController = require("../controllers/bookingController");
+
+// ==================== PUBLIC ROUTES (không cần auth) ====================
+// ⭐ Khách hàng cần xem danh sách shops và pet types để đặt lịch
+router.get("/public/shops", bookingController.getPublicShops);
+router.get("/public/pet-types", bookingController.getPublicPetTypes);
 
 // ==================== CUSTOMER ROUTES ====================
 router.get(

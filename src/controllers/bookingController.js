@@ -12,6 +12,48 @@ const {
 } = require("../models");
 const { Op } = require("sequelize");
 
+// ==================== PUBLIC APIs (không cần authentication) ====================
+
+// Lấy danh sách shops đang hoạt động
+async function getPublicShops(req, res, next) {
+  try {
+    const shops = await CuaHang.findAll({
+      where: { trangThai: "HOAT_DONG" },
+      attributes: [
+        "maCuaHang",
+        "tenCuaHang",
+        "diaChi",
+        "soDienThoai",
+        "moTa",
+        "anhCuaHang",
+        "kinhDo",
+        "viDo",
+      ],
+      order: [["tenCuaHang", "ASC"]],
+    });
+
+    res.json({ data: shops });
+  } catch (err) {
+    console.error("❌ Get public shops error:", err);
+    next(err);
+  }
+}
+
+// Lấy danh sách loại thú cưng
+async function getPublicPetTypes(req, res, next) {
+  try {
+    const petTypes = await LoaiThuCung.findAll({
+      attributes: ["maLoai", "tenLoai"],
+      order: [["tenLoai", "ASC"]],
+    });
+
+    res.json({ data: petTypes });
+  } catch (err) {
+    console.error("❌ Get public pet types error:", err);
+    next(err);
+  }
+}
+
 // ⭐ HÀM THÔNG MINH: Lọc dịch vụ theo loài thú cưng
 function filterServicesByPetType(services, petTypeName) {
   const lowerPetType = petTypeName.toLowerCase();
@@ -445,6 +487,10 @@ async function updateMyAssignment(req, res, next) {
 }
 
 module.exports = {
+  // Public
+  getPublicShops,
+  getPublicPetTypes,
+
   // Customer
   getShopServicesByPetType,
   createBooking,
