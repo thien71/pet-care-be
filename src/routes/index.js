@@ -7,12 +7,14 @@ const ownerRoutes = require("./ownerRoutes");
 const userRoutes = require("./userRoutes");
 const customerRoutes = require("./customerRoutes");
 const bookingRoutes = require("./bookingRoutes");
+const staffRoutes = require("./staffRoutes");
 
 module.exports = (app) => {
   app.use("/api/auth", authRoutes);
   app.use("/api/admin", adminRoutes);
   app.use("/api/owner", ownerRoutes);
-  app.use("/api/users", userRoutes);
+  app.use("/api/staff", staffRoutes);
   app.use("/api/customer", customerRoutes);
   app.use("/api/booking", bookingRoutes);
+  app.use("/api/users", userRoutes);
 };
