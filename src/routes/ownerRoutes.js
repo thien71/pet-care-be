@@ -40,6 +40,7 @@ router.delete("/employees/:id", ownerOnly, ownerController.deleteEmployee);
 // Ca làm
 router.get("/shifts", ownerOnly, ownerController.getShifts);
 router.post("/assign-shift", ownerOnly, ownerController.assignShift);
+router.post("/bulk-assign-shifts", ownerOnly, ownerController.bulkAssignShifts); // ⭐ THÊM DÒNG NÀY
 router.delete("/shifts/:id", ownerOnly, ownerController.removeShift);
 
 // Thanh toán

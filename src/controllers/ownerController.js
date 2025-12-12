@@ -404,6 +404,44 @@ async function assignShift(req, res, next) {
   }
 }
 
+// ⭐ HÀM MỚI: Phân công hàng loạt
+async function bulkAssignShifts(req, res, next) {
+  try {
+    const { assignments } = req.body; // Array: [{maNhanVien, maCa, ngayLam}, ...]
+
+    const currentUser = await NguoiDung.findByPk(req.user.id);
+    if (!currentUser || !currentUser.maCuaHang) {
+      return res.status(404).json({ message: "Shop not found" });
+    }
+
+    // Validate all assignments
+    for (const assign of assignments) {
+      const employee = await NguoiDung.findByPk(assign.maNhanVien);
+      if (!employee || employee.maCuaHang !== currentUser.maCuaHang) {
+        return res.status(403).json({ message: "Employee not in your shop" });
+      }
+    }
+
+    // Tạo tất cả assignments
+    const created = await GanCaLamViec.bulkCreate(
+      assignments.map((a) => ({
+        ...a,
+        maCuaHang: currentUser.maCuaHang,
+        ngayLam: new Date(a.ngayLam),
+      })),
+      { ignoreDuplicates: true } // Bỏ qua nếu đã tồn tại
+    );
+
+    res.status(201).json({
+      message: `Phân công ${created.length} ca thành công!`,
+      data: created,
+    });
+  } catch (err) {
+    console.error("❌ Bulk assign error:", err);
+    next(err);
+  }
+}
+
 async function removeShift(req, res, next) {
   try {
     const shift = await GanCaLamViec.findByPk(req.params.id);
@@ -511,6 +549,7 @@ module.exports = {
   deleteEmployee,
   getShifts,
   assignShift,
+  bulkAssignShifts,
   removeShift,
   getPaymentPackages,
   getMyPayments,
