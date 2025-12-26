@@ -1,5 +1,6 @@
 // src/controllers/bookingController.js - KHÔNG CẦN BẢNG MỚI
 const {
+  sequelize,
   LichHen,
   LichHenThuCung,
   LichHenChiTiet,
@@ -11,7 +12,6 @@ const {
   VaiTro,
 } = require("../models");
 const { Op } = require("sequelize");
-
 // ==================== PUBLIC APIs (không cần authentication) ====================
 
 // Lấy danh sách shops đang hoạt động
@@ -487,10 +487,227 @@ async function updateMyAssignment(req, res, next) {
   }
 }
 
+// ⭐ Lấy TẤT CẢ dịch vụ hệ thống (cho trang chủ/danh sách)
+async function getPublicServices(req, res, next) {
+  try {
+    // Lấy tất cả dịch vụ đang hoạt động
+    const services = await DichVuHeThong.findAll({
+      where: { trangThai: 1 },
+      attributes: ["maDichVu", "tenDichVu", "moTa", "thoiLuong"],
+      order: [["tenDichVu", "ASC"]],
+    });
+
+    // Với mỗi dịch vụ, tính giá trung bình từ các shop
+    const servicesWithPrice = await Promise.all(
+      services.map(async (service) => {
+        const shopServices = await DichVuCuaShop.findAll({
+          where: {
+            maDichVuHeThong: service.maDichVu,
+            trangThai: 1,
+          },
+          attributes: ["gia"],
+        });
+
+        let avgPrice = 0;
+        let minPrice = 0;
+        let shopCount = shopServices.length;
+
+        if (shopCount > 0) {
+          const prices = shopServices.map((s) => parseFloat(s.gia));
+          minPrice = Math.min(...prices);
+          avgPrice = prices.reduce((a, b) => a + b, 0) / prices.length;
+        }
+
+        return {
+          maDichVu: service.maDichVu,
+          tenDichVu: service.tenDichVu,
+          moTa: service.moTa,
+          thoiLuong: service.thoiLuong,
+          giaThapNhat: minPrice,
+          giaTrungBinh: Math.round(avgPrice),
+          soLuongShop: shopCount,
+        };
+      })
+    );
+
+    res.json({ data: servicesWithPrice });
+  } catch (err) {
+    console.error("❌ Get public services error:", err);
+    next(err);
+  }
+}
+
+// ⭐ Lấy CHI TIẾT 1 dịch vụ + danh sách shops cung cấp
+async function getServiceDetail(req, res, next) {
+  try {
+    const { serviceId } = req.params;
+
+    // Lấy thông tin dịch vụ
+    const service = await DichVuHeThong.findByPk(serviceId);
+    if (!service) {
+      return res.status(404).json({ message: "Service not found" });
+    }
+
+    // Lấy danh sách shops cung cấp dịch vụ này
+    const shopsOffering = await DichVuCuaShop.findAll({
+      where: {
+        maDichVuHeThong: serviceId,
+        trangThai: 1,
+      },
+      include: [
+        {
+          model: CuaHang,
+          where: { trangThai: "HOAT_DONG" },
+          attributes: [
+            "maCuaHang",
+            "tenCuaHang",
+            "diaChi",
+            "soDienThoai",
+            "anhCuaHang",
+            "kinhDo",
+            "viDo",
+          ],
+        },
+      ],
+      order: [["gia", "ASC"]], // Sắp xếp theo giá tăng dần
+    });
+
+    // Format response
+    const formattedShops = shopsOffering.map((s) => ({
+      maCuaHang: s.CuaHang.maCuaHang,
+      tenCuaHang: s.CuaHang.tenCuaHang,
+      diaChi: s.CuaHang.diaChi,
+      soDienThoai: s.CuaHang.soDienThoai,
+      anhCuaHang: s.CuaHang.anhCuaHang,
+      kinhDo: s.CuaHang.kinhDo,
+      viDo: s.CuaHang.viDo,
+      gia: s.gia,
+      maDichVuShop: s.maDichVuShop,
+    }));
+
+    res.json({
+      service: {
+        maDichVu: service.maDichVu,
+        tenDichVu: service.tenDichVu,
+        moTa: service.moTa,
+        thoiLuong: service.thoiLuong,
+      },
+      shops: formattedShops,
+    });
+  } catch (err) {
+    console.error("❌ Get service detail error:", err);
+    next(err);
+  }
+}
+
+// ⭐ Lấy CHI TIẾT 1 shop + danh sách dịch vụ
+async function getShopProfile(req, res, next) {
+  try {
+    const { shopId } = req.params;
+
+    // Lấy thông tin shop
+    const shop = await CuaHang.findByPk(shopId, {
+      where: { trangThai: "HOAT_DONG" },
+      attributes: [
+        "maCuaHang",
+        "tenCuaHang",
+        "diaChi",
+        "soDienThoai",
+        "moTa",
+        "anhCuaHang",
+        "kinhDo",
+        "viDo",
+      ],
+    });
+
+    if (!shop) {
+      return res.status(404).json({ message: "Shop not found" });
+    }
+
+    // Lấy danh sách dịch vụ của shop
+    const services = await DichVuCuaShop.findAll({
+      where: {
+        maCuaHang: shopId,
+        trangThai: 1,
+      },
+      include: [
+        {
+          model: DichVuHeThong,
+          attributes: ["maDichVu", "tenDichVu", "moTa", "thoiLuong"],
+        },
+      ],
+      order: [[DichVuHeThong, "tenDichVu", "ASC"]],
+    });
+
+    // Format response
+    const formattedServices = services.map((s) => ({
+      maDichVuShop: s.maDichVuShop,
+      maDichVuHeThong: s.maDichVuHeThong,
+      tenDichVu: s.DichVuHeThong?.tenDichVu,
+      moTa: s.DichVuHeThong?.moTa,
+      thoiLuong: s.DichVuHeThong?.thoiLuong,
+      gia: s.gia,
+    }));
+
+    res.json({
+      shop: shop.toJSON(),
+      services: formattedServices,
+    });
+  } catch (err) {
+    console.error("❌ Get shop profile error:", err);
+    next(err);
+  }
+}
+
+// ⭐ Lấy top shops nổi bật (optional - dựa trên số lượng đơn hoàn thành)
+async function getTopShops(req, res, next) {
+  try {
+    const { limit = 6 } = req.query;
+
+    // Lấy shops có nhiều đơn hoàn thành nhất
+    const topShops = await CuaHang.findAll({
+      where: { trangThai: "HOAT_DONG" },
+      attributes: [
+        "maCuaHang",
+        "tenCuaHang",
+        "diaChi",
+        "soDienThoai",
+        "moTa",
+        "anhCuaHang",
+        "kinhDo",
+        "viDo",
+      ],
+      include: [
+        {
+          model: LichHen,
+          attributes: [],
+          where: { trangThai: "HOAN_THANH" },
+          required: false,
+        },
+      ],
+      group: ["CuaHang.maCuaHang"],
+      order: [
+        [sequelize.fn("COUNT", sequelize.col("LichHens.maLichHen")), "DESC"],
+      ],
+      limit: parseInt(limit),
+      subQuery: false,
+    });
+
+    res.json({ data: topShops });
+  } catch (err) {
+    console.error("❌ Get top shops error:", err);
+    next(err);
+  }
+}
+
 module.exports = {
   // Public
   getPublicShops,
   getPublicPetTypes,
+  getPublicServices,
+  getServiceDetail,
+  getShopProfile,
+  getTopShops,
 
   // Customer
   getShopServicesByPetType,

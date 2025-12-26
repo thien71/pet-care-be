@@ -8,6 +8,11 @@ const bookingController = require("../controllers/bookingController");
 // ⭐ Khách hàng cần xem danh sách shops và pet types để đặt lịch
 router.get("/public/shops", bookingController.getPublicShops);
 router.get("/public/pet-types", bookingController.getPublicPetTypes);
+// ⭐ NEW - Thêm 4 routes mới
+router.get("/public/services", bookingController.getPublicServices);
+router.get("/public/top-shops", bookingController.getTopShops);
+router.get("/service/:serviceId", bookingController.getServiceDetail);
+router.get("/shop/:shopId/profile", bookingController.getShopProfile);
 
 // ==================== CUSTOMER ROUTES ====================
 router.get(
