@@ -44,7 +44,7 @@ async function getPublicPetTypes(req, res, next) {
   try {
     const petTypes = await LoaiThuCung.findAll({
       attributes: ["maLoai", "tenLoai"],
-      order: [["tenLoai", "ASC"]],
+      order: [["maLoai", "ASC"]],
     });
 
     res.json({ data: petTypes });
@@ -63,8 +63,9 @@ function filterServicesByPetType(services, petTypeName) {
     chó: ["chó", "cún", "dog"],
     mèo: ["mèo", "cat", "kitty"],
     chim: ["chim", "bird"],
-    cá: ["cá", "fish"],
+    hamster: ["hamster", "chuột"],
     thỏ: ["thỏ", "rabbit"],
+    rùa: ["rùa", "turtle"],
   };
 
   // Lấy keywords cho loài này
