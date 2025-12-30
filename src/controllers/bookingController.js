@@ -1,6 +1,7 @@
-// src/controllers/bookingController.js - KHÔNG CẦN BẢNG MỚI
+// src/controllers/bookingController.js
 const {
   sequelize,
+  CaLamViec,
   LichHen,
   LichHenThuCung,
   LichHenChiTiet,
@@ -907,6 +908,7 @@ module.exports = {
   getTopShops,
   getAllShopServices,
   getShopServiceDetail,
+  getAvailableSlots,
 
   // Customer
   getShopServicesByPetType,
