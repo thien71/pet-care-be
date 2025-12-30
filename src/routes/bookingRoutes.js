@@ -14,6 +14,12 @@ router.get("/public/top-shops", bookingController.getTopShops);
 router.get("/service/:serviceId", bookingController.getServiceDetail);
 router.get("/shop/:shopId/profile", bookingController.getShopProfile);
 
+router.get("/public/shop-services", bookingController.getAllShopServices);
+router.get(
+  "/public/shop-service/:shopServiceId",
+  bookingController.getShopServiceDetail
+);
+
 // ==================== CUSTOMER ROUTES ====================
 router.get(
   "/shop/:shopId/services/pet-type/:petTypeId",

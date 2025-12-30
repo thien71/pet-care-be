@@ -700,6 +700,203 @@ async function getTopShops(req, res, next) {
   }
 }
 
+// ⭐ API MỚI: Lấy danh sách TẤT CẢ dịch vụ của các shop (cho trang chủ)
+async function getAllShopServices(req, res, next) {
+  try {
+    const {
+      limit = 20,
+      offset = 0,
+      search = "",
+      sortBy = "newest",
+    } = req.query;
+
+    // Build where clause cho search
+    const whereClause = { trangThai: 1 };
+
+    const shopServices = await DichVuCuaShop.findAndCountAll({
+      where: whereClause,
+      include: [
+        {
+          model: DichVuHeThong,
+          attributes: ["maDichVu", "tenDichVu", "moTa", "thoiLuong"],
+          where: search
+            ? {
+                tenDichVu: { [Op.like]: `%${search}%` },
+              }
+            : undefined,
+        },
+        {
+          model: CuaHang,
+          where: { trangThai: "HOAT_DONG" },
+          attributes: [
+            "maCuaHang",
+            "tenCuaHang",
+            "diaChi",
+            "soDienThoai",
+            "anhCuaHang",
+            "kinhDo",
+            "viDo",
+          ],
+        },
+      ],
+      limit: parseInt(limit),
+      offset: parseInt(offset),
+      order:
+        sortBy === "price_asc"
+          ? [["gia", "ASC"]]
+          : sortBy === "price_desc"
+          ? [["gia", "DESC"]]
+          : [["maDichVuShop", "DESC"]], // newest
+      subQuery: false,
+    });
+
+    // Format response
+    const formattedServices = shopServices.rows.map((s) => ({
+      maDichVuShop: s.maDichVuShop,
+      maDichVuHeThong: s.maDichVuHeThong,
+
+      // Thông tin dịch vụ
+      tenDichVu: s.DichVuHeThong?.tenDichVu,
+      moTa: s.DichVuHeThong?.moTa,
+      thoiLuong: s.DichVuHeThong?.thoiLuong,
+      gia: s.gia,
+
+      // Thông tin shop
+      maCuaHang: s.CuaHang?.maCuaHang,
+      tenCuaHang: s.CuaHang?.tenCuaHang,
+      diaChi: s.CuaHang?.diaChi,
+      soDienThoai: s.CuaHang?.soDienThoai,
+      anhCuaHang: s.CuaHang?.anhCuaHang,
+      kinhDo: s.CuaHang?.kinhDo,
+      viDo: s.CuaHang?.viDo,
+
+      // Mock data cho rating (sau này có thể tính từ đánh giá thực)
+      rating: (Math.random() * 1.5 + 3.5).toFixed(1), // 3.5-5.0
+      reviewCount: Math.floor(Math.random() * 50) + 10, // 10-60 reviews
+    }));
+
+    res.json({
+      data: formattedServices,
+      total: shopServices.count,
+      page: Math.floor(offset / limit) + 1,
+      totalPages: Math.ceil(shopServices.count / limit),
+    });
+  } catch (err) {
+    console.error("❌ Get all shop services error:", err);
+    next(err);
+  }
+}
+
+// ⭐ API MỚI: Lấy chi tiết 1 dịch vụ của shop cụ thể
+async function getShopServiceDetail(req, res, next) {
+  try {
+    const { shopServiceId } = req.params;
+
+    const shopService = await DichVuCuaShop.findByPk(shopServiceId, {
+      include: [
+        {
+          model: DichVuHeThong,
+          attributes: ["maDichVu", "tenDichVu", "moTa", "thoiLuong"],
+        },
+        {
+          model: CuaHang,
+          attributes: [
+            "maCuaHang",
+            "tenCuaHang",
+            "diaChi",
+            "soDienThoai",
+            "moTa",
+            "anhCuaHang",
+            "kinhDo",
+            "viDo",
+          ],
+        },
+      ],
+    });
+
+    if (!shopService) {
+      return res.status(404).json({ message: "Service not found" });
+    }
+
+    // Lấy các dịch vụ khác của shop này
+    const otherServices = await DichVuCuaShop.findAll({
+      where: {
+        maCuaHang: shopService.maCuaHang,
+        maDichVuShop: { [Op.ne]: shopServiceId },
+        trangThai: 1,
+      },
+      include: [
+        {
+          model: DichVuHeThong,
+          attributes: ["tenDichVu", "thoiLuong"],
+        },
+      ],
+      limit: 6,
+    });
+
+    // Mock reviews (sau này tích hợp thật)
+    const mockReviews = [
+      {
+        id: 1,
+        userName: "Nguyễn Văn A",
+        rating: 5,
+        comment: "Dịch vụ tốt, nhân viên nhiệt tình!",
+        date: "2024-12-20",
+        avatar: null,
+      },
+      {
+        id: 2,
+        userName: "Trần Thị B",
+        rating: 4,
+        comment: "Chất lượng ổn, giá hợp lý",
+        date: "2024-12-18",
+        avatar: null,
+      },
+    ];
+
+    const response = {
+      maDichVuShop: shopService.maDichVuShop,
+      maDichVuHeThong: shopService.maDichVuHeThong,
+
+      // Thông tin dịch vụ
+      tenDichVu: shopService.DichVuHeThong?.tenDichVu,
+      moTa: shopService.DichVuHeThong?.moTa,
+      thoiLuong: shopService.DichVuHeThong?.thoiLuong,
+      gia: shopService.gia,
+
+      // Thông tin shop
+      shop: {
+        maCuaHang: shopService.CuaHang?.maCuaHang,
+        tenCuaHang: shopService.CuaHang?.tenCuaHang,
+        diaChi: shopService.CuaHang?.diaChi,
+        soDienThoai: shopService.CuaHang?.soDienThoai,
+        moTa: shopService.CuaHang?.moTa,
+        anhCuaHang: shopService.CuaHang?.anhCuaHang,
+        kinhDo: shopService.CuaHang?.kinhDo,
+        viDo: shopService.CuaHang?.viDo,
+      },
+
+      // Dịch vụ khác của shop
+      otherServices: otherServices.map((s) => ({
+        maDichVuShop: s.maDichVuShop,
+        tenDichVu: s.DichVuHeThong?.tenDichVu,
+        thoiLuong: s.DichVuHeThong?.thoiLuong,
+        gia: s.gia,
+      })),
+
+      // Mock data
+      rating: (Math.random() * 1.5 + 3.5).toFixed(1),
+      reviewCount: Math.floor(Math.random() * 50) + 10,
+      reviews: mockReviews,
+    };
+
+    res.json({ data: response });
+  } catch (err) {
+    console.error("❌ Get shop service detail error:", err);
+    next(err);
+  }
+}
+
 module.exports = {
   // Public
   getPublicShops,
@@ -708,6 +905,8 @@ module.exports = {
   getServiceDetail,
   getShopProfile,
   getTopShops,
+  getAllShopServices,
+  getShopServiceDetail,
 
   // Customer
   getShopServicesByPetType,
