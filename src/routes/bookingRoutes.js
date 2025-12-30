@@ -1,26 +1,27 @@
-// src/routes/bookingRoutes.js - UPDATED với Public Endpoints
+// ⭐ CẬP NHẬT src/routes/bookingRoutes.js
+
 const express = require("express");
 const router = express.Router();
 const { verifyToken, checkRole } = require("../middlewares/authMiddlewares");
 const bookingController = require("../controllers/bookingController");
 
-// ==================== PUBLIC ROUTES (không cần auth) ====================
-// ⭐ Khách hàng cần xem danh sách shops và pet types để đặt lịch
+// ==================== PUBLIC ROUTES ====================
 router.get("/public/shops", bookingController.getPublicShops);
 router.get("/public/pet-types", bookingController.getPublicPetTypes);
-router.get(
-  "/shop/:shopId/available-slots",
-  bookingController.getAvailableSlots
-);
 router.get("/public/services", bookingController.getPublicServices);
 router.get("/public/top-shops", bookingController.getTopShops);
-router.get("/service/:serviceId", bookingController.getServiceDetail);
-router.get("/shop/:shopId/profile", bookingController.getShopProfile);
-
 router.get("/public/shop-services", bookingController.getAllShopServices);
 router.get(
   "/public/shop-service/:shopServiceId",
   bookingController.getShopServiceDetail
+);
+router.get("/service/:serviceId", bookingController.getServiceDetail);
+router.get("/shop/:shopId/profile", bookingController.getShopProfile);
+
+// ⭐ THÊM ROUTE MỚI - Lấy khung giờ available
+router.get(
+  "/shop/:shopId/available-slots",
+  bookingController.getAvailableSlots
 );
 
 // ==================== CUSTOMER ROUTES ====================

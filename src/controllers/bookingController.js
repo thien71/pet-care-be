@@ -11,6 +11,7 @@ const {
   CuaHang,
   NguoiDung,
   VaiTro,
+  GanCaLamViec,
 } = require("../models");
 const { Op } = require("sequelize");
 // ==================== PUBLIC APIs (không cần authentication) ====================
@@ -894,6 +895,134 @@ async function getShopServiceDetail(req, res, next) {
     res.json({ data: response });
   } catch (err) {
     console.error("❌ Get shop service detail error:", err);
+    next(err);
+  }
+}
+
+async function getAvailableSlots(req, res, next) {
+  try {
+    const { shopId } = req.params;
+    const { date } = req.query; // Format: YYYY-MM-DD
+
+    if (!date) {
+      return res.status(400).json({ message: "Date is required" });
+    }
+
+    // 1. Lấy danh sách nhân viên KTV làm việc trong ngày này
+    const assignments = await GanCaLamViec.findAll({
+      where: {
+        maCuaHang: shopId,
+        ngayLam: date,
+      },
+      include: [
+        {
+          model: NguoiDung,
+          as: "NhanVien",
+          include: [
+            {
+              model: VaiTro,
+              as: "VaiTros",
+              where: { tenVaiTro: "KY_THUAT_VIEN" },
+              required: true,
+            },
+          ],
+        },
+        {
+          model: CaLamViec,
+          as: "CaLamViec",
+        },
+      ],
+    });
+
+    // 2. Lấy các đơn hàng đã đặt trong ngày này
+    const existingBookings = await LichHen.findAll({
+      where: {
+        maCuaHang: shopId,
+        ngayHen: {
+          [Op.between]: [
+            new Date(`${date}T00:00:00`),
+            new Date(`${date}T23:59:59`),
+          ],
+        },
+        trangThai: {
+          [Op.in]: ["CHO_XAC_NHAN", "DA_XAC_NHAN", "DANG_THUC_HIEN"],
+        },
+      },
+      include: [
+        {
+          model: LichHenThuCung,
+          include: [
+            {
+              model: LichHenChiTiet,
+              include: [
+                {
+                  model: DichVuCuaShop,
+                  include: [{ model: DichVuHeThong }],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+
+    // 3. Tạo danh sách time slots (8h-21h, mỗi slot 1 tiếng)
+    const timeSlots = [];
+    for (let hour = 8; hour <= 20; hour++) {
+      const timeStr = `${hour.toString().padStart(2, "0")}:00`;
+
+      // Đếm số KTV có thể làm trong khung giờ này
+      let availableTechs = 0;
+      assignments.forEach((assignment) => {
+        const ca = assignment.CaLamViec;
+        if (!ca) return;
+
+        const [startHour] = ca.gioBatDau.split(":");
+        const [endHour] = ca.gioKetThuc.split(":");
+
+        if (hour >= parseInt(startHour) && hour < parseInt(endHour)) {
+          availableTechs++;
+        }
+      });
+
+      // Đếm số đơn đã đặt trong khung giờ này
+      let bookedSlots = 0;
+      existingBookings.forEach((booking) => {
+        const bookingHour = new Date(booking.ngayHen).getHours();
+
+        // Tính thời gian dự kiến cho đơn hàng (tổng thời lượng dịch vụ)
+        let totalDuration = 0;
+        booking.LichHenThuCungs?.forEach((pet) => {
+          pet.LichHenChiTiets?.forEach((detail) => {
+            totalDuration +=
+              detail.DichVuCuaShop?.DichVuHeThong?.thoiLuong || 60;
+          });
+        });
+
+        // Làm tròn lên giờ
+        const durationHours = Math.ceil(totalDuration / 60);
+
+        // Kiểm tra xem đơn này có chiếm slot này không
+        if (hour >= bookingHour && hour < bookingHour + durationHours) {
+          bookedSlots++;
+        }
+      });
+
+      // Slot còn trống = Số KTV - Số đơn đang xử lý
+      const availableSlots = Math.max(0, availableTechs - bookedSlots);
+
+      timeSlots.push({
+        gioBatDau: timeStr,
+        soLuongKTV: availableTechs,
+        daDat: bookedSlots,
+        conTrong: availableSlots,
+        available: availableSlots > 0,
+      });
+    }
+
+    res.json({ date, slots: timeSlots });
+  } catch (err) {
+    console.error("❌ Get available slots error:", err);
     next(err);
   }
 }
