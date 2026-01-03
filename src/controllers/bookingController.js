@@ -702,253 +702,70 @@ async function getTopShops(req, res, next) {
   }
 }
 
-// ⭐ HELPER: Bỏ dấu tiếng Việt
 function removeVietnameseTones(str) {
   if (!str) return "";
-  str = str.toLowerCase();
-  str = str.replace(/à|á|ạ|ả|ã|â|ầ|ấ|ậ|ẩ|ẫ|ă|ằ|ắ|ặ|ẳ|ẵ/g, "a");
-  str = str.replace(/è|é|ẹ|ẻ|ẽ|ê|ề|ế|ệ|ể|ễ/g, "e");
-  str = str.replace(/ì|í|ị|ỉ|ĩ/g, "i");
-  str = str.replace(/ò|ó|ọ|ỏ|õ|ô|ồ|ố|ộ|ổ|ỗ|ơ|ờ|ớ|ợ|ở|ỡ/g, "o");
-  str = str.replace(/ù|ú|ụ|ủ|ũ|ư|ừ|ứ|ự|ử|ữ/g, "u");
-  str = str.replace(/ỳ|ý|ỵ|ỷ|ỹ/g, "y");
-  str = str.replace(/đ/g, "d");
+  // str = str.toLowerCase();
+  // str = str.replace(/à|á|ạ|ả|ã|â|ầ|ấ|ậ|ẩ|ẫ|ă|ằ|ắ|ặ|ẳ|ẵ/g, "a");
+  // str = str.replace(/è|é|ẹ|ẻ|ẽ|ê|ề|ế|ệ|ể|ễ/g, "e");
+  // str = str.replace(/ì|í|ị|ỉ|ĩ/g, "i");
+  // str = str.replace(/ò|ó|ọ|ỏ|õ|ô|ồ|ố|ộ|ổ|ỗ|ơ|ờ|ớ|ợ|ở|ỡ/g, "o");
+  // str = str.replace(/ù|ú|ụ|ủ|ũ|ư|ừ|ứ|ự|ử|ữ/g, "u");
+  // str = str.replace(/ỳ|ý|ỵ|ỷ|ỹ/g, "y");
+  // str = str.replace(/đ/g, "d");
   return str;
 }
 
-// ⭐ TỪ ĐIỂN TỪ ĐỒNG NGHĨA - CẬP NHẬT DỰA TRÊN DỊCH VỤ THỰC TẾ
-const SYNONYM_DICTIONARY = {
-  // === NHÓM TẮM RỬA & VỆ SINH ===
-  tam: [
-    "tam rua",
-    "ve sinh",
-    "spa",
-    "lam sach",
-    "tam goi",
-    "목욕",
-    "bath",
-    "shower",
-  ],
-  "tam rua": ["tam", "ve sinh", "spa", "lam sach", "tam goi"],
-  "ve sinh": ["tam", "tam rua", "spa", "lam sach", "위생"],
-  spa: ["tam", "tam rua", "ve sinh", "lam dep", "cham soc"],
-  "lam sach": ["tam", "ve sinh", "tam rua"],
-  "tam cat": ["tam", "ve sinh", "hamster", "lam sach"], // cho hamster
-
-  // === NHÓM CẮT TỈA & LÀM ĐẸP ===
-  "cat tia": ["cat long", "tao kieu", "lam dep", "grooming", "trim", "cat cat"],
-  "cat long": ["cat tia", "tao kieu", "lam dep", "grooming", "cat"],
-  grooming: ["cat tia", "cat long", "lam dep", "tao kieu", "cham soc"],
-  "lam dep": ["spa", "grooming", "cat tia", "tao kieu", "cham soc"],
-  "tao kieu": ["cat tia", "cat long", "grooming", "lam dep"],
-
-  // Cắt móng
-  "cat mong": ["mong", "cat", "mai mong", "trim"],
-  mong: ["cat mong", "mai mong"],
-
-  // Cắt mỏ (chim)
-  "cat mo": ["mo", "mai mo", "chim"],
-
-  // Chải lông
-  "chai long": ["chai", "long", "빗질", "comb", "brush"],
-  chai: ["chai long", "빗질"],
-
-  // === NHÓM KHÁM & CHỮA BỆNH ===
-  kham: [
-    "kham benh",
-    "kham suc khoe",
-    "bac si",
-    "thu y",
-    "dieu tri",
-    "kham sang",
-    "check up",
-  ],
-  "kham benh": ["kham", "kham suc khoe", "bac si", "dieu tri", "thu y"],
-  "kham suc khoe": ["kham", "kham benh", "kham dinh ky", "check up"],
-  "kham dinh ky": ["kham", "kham suc khoe", "check up"],
-  "bac si": ["kham", "thu y", "kham benh", "dieu tri"],
-  "thu y": ["bac si", "kham benh", "dieu tri", "chua benh", "vet"],
-  "dieu tri": ["chua benh", "kham benh", "thu y", "y te"],
-  "chua benh": ["dieu tri", "kham benh", "thu y"],
-
-  // Khám chuyên khoa
-  "kham rang": ["rang", "rang mieng", "nieng rang", "dental"],
-  rang: ["kham rang", "rang mieng", "lam sach rang"],
-  "kham tai": ["tai", "ve tai", "lam sach tai", "ear"],
-  tai: ["kham tai", "lam sach tai"],
-  "kham ho hap": ["ho hap", "phoi", "respiratory"],
-  "ho hap": ["kham ho hap", "phoi", "tho"],
-
-  // === NHÓM TIÊM CHỦNG & PHÒNG BỆNH ===
-  tiem: [
-    "tiem phong",
-    "vaccine",
-    "tiem chung",
-    "phong ngua",
-    "chich",
-    "injection",
-  ],
-  vaccine: ["tiem", "tiem phong", "tiem chung", "phong benh", "vac xin"],
-  "tiem phong": ["vaccine", "tiem", "phong ngua", "tiem chung"],
-  "tiem chung": ["vaccine", "tiem phong", "tiem", "phong ngua"],
-  "phong ngua": ["tiem", "vaccine", "phong benh"],
-  "phong benh": ["vaccine", "tiem phong", "phong ngua"],
-
-  // === NHÓM KHÁCH SẠN & LƯU TRÚ ===
-  "khach san": [
-    "luu tru",
-    "gui giu",
-    "nha tro",
-    "cham soc",
-    "hotel",
-    "pet hotel",
-  ],
-  "luu tru": ["khach san", "gui giu", "nha tro", "o lai", "boarding"],
-  "gui giu": ["khach san", "luu tru", "nha tro", "cham soc", "giu ho"],
-  "nha tro": ["khach san", "luu tru", "gui giu"],
-
-  // === NHÓM HUẤN LUYỆN & ĐÀO TẠO ===
-  "huan luyen": ["dao tao", "day bao", "ky luat", "training", "day"],
-  "dao tao": ["huan luyen", "day bao", "training", "day"],
-  training: ["huan luyen", "dao tao", "day bao", "day"],
-  day: ["huan luyen", "dao tao", "day bao", "ky luat"],
-
-  // === NHÓM MASSAGE & CHĂM SÓC ===
-  massage: ["xoa bop", "thu gian", "thoa", "마사지", "massage thu gian"],
-  "thu gian": ["massage", "xoa bop", "relax"],
-  "xoa bop": ["massage", "thu gian"],
-
-  // === NHÓM DINH DƯỠNG ===
-  "cho an": ["an uong", "dinh duong", "thuc an", "먹이", "feeding"],
-  "dinh duong": ["cho an", "an uong", "thuc an", "vitamin"],
-  "thuc an": ["cho an", "dinh duong", "먹이"],
-
-  // === LOẠI THÚ CƯNG (mở rộng) ===
-  cho: ["cun", "dog", "cho cai", "cho duc", "강아지", "puppy", "chó"],
-  cun: ["cho", "dog", "puppy"],
-  meo: ["cat", "miu", "mèo", "고양이", "kitty"],
-  cat: ["meo", "kitty", "miu"],
-  miu: ["meo", "cat"],
-  chim: ["bird", "새", "vet"],
-  hamster: ["chuot", "chuột", "햄스터", "mouse"],
-  chuot: ["hamster", "mouse"],
-  tho: ["rabbit", "토끼", "thỏ"],
-  rua: ["turtle", "거북이", "rùa", "ba ba"],
+const petMap = {
+  cho: ["chó"],
+  meo: ["mèo", "meo"],
+  chim: ["chim"],
+  hamster: ["hamster", "chuot", "chuột"],
+  tho: ["thỏ"],
+  rua: ["rùa"],
 };
 
-// ⭐ HÀM MỞ RỘNG TỪ KHÓA VỚI SYNONYM + XỬ LÝ CỤM TỪ
-function expandSearchTerms(searchTerm) {
-  if (!searchTerm) return [];
+const SYNONYMS = {
+  // Nhóm 1: Tắm rửa
+  tam: ["tam rua", "spa", "lam sach", "ve sinh"],
+  rua: ["tam", "tam rua", "spa", "lam sach"],
+  "ve sinh": ["tam", "tam rua", "spa", "lam sach", "tam rua cho"],
+  spa: ["tam", "tam rua", "lam sach"],
+  "tam rua": ["tam", "spa", "lam sach"],
+  "lam sach": ["tam", "tam rua", "spa", "ve sinh"],
 
-  const normalized = removeVietnameseTones(searchTerm.toLowerCase().trim());
-  const expandedTerms = new Set([searchTerm.toLowerCase(), normalized]);
+  // Nhóm 2: Cắt tỉa
+  cat: ["cat long", "tia", "grooming"],
+  "cat long": ["cat", "tia", "grooming"],
+  tia: ["cat", "cat long", "grooming"],
+  grooming: ["cat", "cat long", "tia"],
 
-  // Tách từ
-  const words = normalized.split(/\s+/);
+  // Nhóm 3: Khám sức khỏe
+  kham: ["kham benh", "check up", "suc khoe", "kham dinh ky"],
+  "kham benh": ["kham", "check up"],
 
-  // Xử lý cụm từ nhiều từ (ví dụ: "tam rua", "cat tia", "kham benh")
-  for (let i = 0; i < words.length - 1; i++) {
-    const twoWords = words[i] + " " + words[i + 1];
-    if (SYNONYM_DICTIONARY[twoWords]) {
-      SYNONYM_DICTIONARY[twoWords].forEach((syn) => expandedTerms.add(syn));
-      expandedTerms.add(twoWords);
-    }
-  }
+  // Nhóm 4: Tiêm chủng
+  tiem: ["vaccine", "phong benh", "phong ngua"],
+  vaccine: ["tiem", "phong benh"],
 
-  // Xử lý từng từ đơn
-  words.forEach((word) => {
-    if (SYNONYM_DICTIONARY[word]) {
-      SYNONYM_DICTIONARY[word].forEach((syn) => expandedTerms.add(syn));
-    }
-  });
+  // Nhóm 5: Chải lông
+  chai: ["chai long", "lam sach"],
+  "chai long": ["chai", "lam sach"],
 
-  // Xử lý cả cụm search chứa trong dictionary keys
-  Object.keys(SYNONYM_DICTIONARY).forEach((key) => {
-    if (normalized.includes(key) || key.includes(normalized)) {
-      SYNONYM_DICTIONARY[key].forEach((syn) => expandedTerms.add(syn));
-      expandedTerms.add(key);
-    }
-  });
+  // Nhóm 6: Loài thú (để tìm được khi nhập tên khác)
+  chuot: ["hamster"], // ✅ THÊM CÁI NÀY để "chuột" tìm được hamster
+  hamster: ["chuot"],
+};
 
-  console.log(
-    `🔍 Expanded "${searchTerm}" → [${Array.from(expandedTerms).join(", ")}]`
-  );
-  return Array.from(expandedTerms);
-}
-
-// ⭐ HÀM TÍNH ĐIỂM RELEVANCE - CẢI TIẾN
-function calculateRelevanceScore(service, searchTerms, originalSearch) {
-  let score = 0;
-
-  const serviceName = removeVietnameseTones(
-    service.DichVuHeThong?.tenDichVu?.toLowerCase() || ""
-  );
-  const serviceDesc = removeVietnameseTones(
-    service.DichVuHeThong?.moTa?.toLowerCase() || ""
-  );
-  const shopName = removeVietnameseTones(
-    service.CuaHang?.tenCuaHang?.toLowerCase() || ""
-  );
-
-  // Chuẩn hóa search gốc
-  const normalizedOriginal = removeVietnameseTones(
-    originalSearch.toLowerCase()
-  );
-
-  searchTerms.forEach((term) => {
-    const normalizedTerm = removeVietnameseTones(term);
-
-    // === ĐIỂM CAO: Khớp chính xác cụm từ gốc ===
-    if (serviceName.includes(normalizedOriginal)) {
-      score += 20; // Bonus lớn cho exact match
-    }
-    if (serviceDesc.includes(normalizedOriginal)) {
-      score += 15;
-    }
-
-    // === ĐIỂM TRUNG BÌNH: Khớp từng term ===
-    if (serviceName.includes(normalizedTerm)) {
-      score += 10;
-    }
-    if (serviceDesc.includes(normalizedTerm)) {
-      score += 5;
-    }
-    if (shopName.includes(normalizedTerm)) {
-      score += 2;
-    }
-
-    // === BONUS: Khớp từ đầu ===
-    if (serviceName.startsWith(normalizedTerm)) {
-      score += 5;
-    }
-
-    // === BONUS: Khớp từ khóa quan trọng ===
-    const importantKeywords = ["kham", "tiem", "tam", "cat", "chai", "massage"];
-    if (
-      importantKeywords.includes(normalizedTerm) &&
-      serviceName.includes(normalizedTerm)
-    ) {
-      score += 3;
-    }
-  });
-
-  return score;
-}
-
-// ⭐ API TÌM KIẾM THÔNG MINH - CẢI TIẾN
 async function getAllShopServices(req, res, next) {
   try {
     const {
       limit = 20,
       offset = 0,
       search = "",
-      sortBy = "relevance", // Mặc định sort theo relevance khi có search
+      sortBy = "relevance",
       petType = "",
     } = req.query;
 
-    console.log("🔍 Search request:", { search, petType, sortBy });
-
-    // Lấy TẤT CẢ dịch vụ
     const shopServices = await DichVuCuaShop.findAll({
       where: { trangThai: 1 },
       include: [
@@ -973,106 +790,89 @@ async function getAllShopServices(req, res, next) {
       subQuery: false,
     });
 
-    let filteredServices = shopServices;
+    let filtered = shopServices;
 
-    // ⭐ BỘ LỌC 1: Lọc theo loại thú cưng
+    // ========================================
+    // 1️⃣ BỘ LỌC LOÀI (QUY LỰC NHẤT)
+    // ========================================
+    // Khi user click "Chó", chỉ hiện dịch vụ có chứa "chó" hoặc "cho"
     if (petType) {
-      const petTypeMapping = {
-        cho: ["chó", "cún", "dog", "cho", "puppy"],
-        meo: ["mèo", "cat", "kitty", "meo", "miu"],
-        chim: ["chim", "bird"],
-        hamster: ["hamster", "chuột", "chuot", "mouse"],
-        tho: ["thỏ", "rabbit", "tho"],
-        rua: ["rùa", "turtle", "rua", "ba ba"],
-      };
-
-      const keywords = petTypeMapping[petType.toLowerCase()] || [
-        petType.toLowerCase(),
-      ];
-
-      filteredServices = filteredServices.filter((service) => {
-        const serviceName =
-          service.DichVuHeThong?.tenDichVu?.toLowerCase() || "";
-        const serviceDesc = service.DichVuHeThong?.moTa?.toLowerCase() || "";
-        const serviceNameNoTone = removeVietnameseTones(serviceName);
-        const serviceDescNoTone = removeVietnameseTones(serviceDesc);
-
-        // Khớp loài này
-        const matchesThisPet = keywords.some(
-          (keyword) =>
-            serviceName.includes(keyword) ||
-            serviceDesc.includes(keyword) ||
-            serviceNameNoTone.includes(removeVietnameseTones(keyword)) ||
-            serviceDescNoTone.includes(removeVietnameseTones(keyword))
-        );
-        if (matchesThisPet) return true;
-
-        // Loại trừ loài khác
-        const allPetKeywords = Object.values(petTypeMapping).flat();
-        const matchesOtherPet = allPetKeywords.some(
-          (keyword) =>
-            keyword !== petType.toLowerCase() &&
-            (serviceName.includes(keyword) ||
-              serviceDesc.includes(keyword) ||
-              serviceNameNoTone.includes(removeVietnameseTones(keyword)) ||
-              serviceDescNoTone.includes(removeVietnameseTones(keyword)))
-        );
-        if (matchesOtherPet) return false;
-
-        return true; // Dịch vụ chung
+      const keywords = petMap[petType.toLowerCase()] || [];
+      filtered = filtered.filter((s) => {
+        const text = (
+          s.DichVuHeThong?.tenDichVu +
+          " " +
+          s.DichVuHeThong?.moTa
+        ).toLowerCase();
+        // Kiểm tra xem dịch vụ này có chứa từ nào trong keywords không
+        return keywords.some((kw) => text.includes(kw.toLowerCase()));
       });
-
-      console.log(`✅ After pet filter: ${filteredServices.length} services`);
     }
 
-    // ⭐ BỘ LỌC 2: Tìm kiếm thông minh
+    // ========================================
+    // 2️⃣ TÌM KIẾM (phải match TẤT CẢ từ user nhập)
+    // ========================================
+    // User nhập "tắm chó" → PHẢI có "tắm" + "chó"
+    // User nhập "chuột" → tìm "chuột" hoặc từ đồng nghĩa "hamster"
     if (search && search.trim()) {
-      const expandedTerms = expandSearchTerms(search);
+      const words = search.trim().toLowerCase().split(/\s+/);
 
-      // Tính điểm relevance
-      const servicesWithScore = filteredServices.map((service) => ({
-        service,
-        score: calculateRelevanceScore(service, expandedTerms, search.trim()),
-      }));
+      filtered = filtered.filter((s) => {
+        const fullText = (
+          s.DichVuHeThong?.tenDichVu +
+          " " +
+          s.DichVuHeThong?.moTa
+        ).toLowerCase();
+        const fullTextNoTone = removeVietnameseTones(fullText);
 
-      // Lọc và sort theo điểm
-      filteredServices = servicesWithScore
-        .filter((item) => item.score > 0)
-        .sort((a, b) => b.score - a.score)
-        .map((item) => item.service);
+        // PHẢI check tất cả từ mà user nhập
+        return words.every((word) => {
+          const wordNoTone = removeVietnameseTones(word);
 
-      console.log(`✅ After search filter: ${filteredServices.length} matches`);
+          // ✅ CÁCH 1: Match chính xác (có dấu hoặc không dấu)
+          if (fullText.includes(word) || fullText.includes(wordNoTone)) {
+            return true;
+          }
 
-      // Log top 3 kết quả để debug
-      if (filteredServices.length > 0) {
-        console.log("🎯 Top results:");
-        filteredServices.slice(0, 3).forEach((s, i) => {
-          console.log(`  ${i + 1}. ${s.DichVuHeThong?.tenDichVu}`);
+          // ✅ CÁCH 2: Match không dấu
+          if (fullTextNoTone.includes(wordNoTone)) {
+            return true;
+          }
+
+          // ✅ CÁCH 3: Kiểm tra từ đồng nghĩa
+          // Ví dụ: user nhập "vệ sinh" (bỏ dấu = "ve sinh")
+          // Hệ thống tìm SYNONYMS["ve sinh"] = ["tam", "tam rua", "spa", "lam sach"]
+          // Rồi check xem fullText có chứa từ nào trong danh sách không
+          if (SYNONYMS[wordNoTone]) {
+            return SYNONYMS[wordNoTone].some((syn) => {
+              const synNoTone = removeVietnameseTones(syn);
+              return (
+                fullText.includes(syn) || fullTextNoTone.includes(synNoTone)
+              );
+            });
+          }
+
+          return false;
         });
-      }
-    } else {
-      // ⭐ KHÔNG CÓ SEARCH: Sắp xếp theo sortBy
-      if (sortBy === "price_asc") {
-        filteredServices.sort((a, b) => parseFloat(a.gia) - parseFloat(b.gia));
-      } else if (sortBy === "price_desc") {
-        filteredServices.sort((a, b) => parseFloat(b.gia) - parseFloat(a.gia));
-      } else if (sortBy === "rating") {
-        filteredServices.sort(() => Math.random() - 0.5);
-      } else {
-        // newest (default)
-        filteredServices.sort((a, b) => b.maDichVuShop - a.maDichVuShop);
-      }
+      });
     }
 
-    // ⭐ PHÂN TRANG
-    const total = filteredServices.length;
-    const paginatedServices = filteredServices.slice(
+    // ========================================
+    // 3️⃣ PHÂN TRANG & SORT
+    // ========================================
+    if (!search && sortBy === "price_asc") {
+      filtered.sort((a, b) => parseFloat(a.gia) - parseFloat(b.gia));
+    } else if (!search && sortBy === "price_desc") {
+      filtered.sort((a, b) => parseFloat(b.gia) - parseFloat(a.gia));
+    }
+
+    const total = filtered.length;
+    const paginated = filtered.slice(
       parseInt(offset),
       parseInt(offset) + parseInt(limit)
     );
 
-    // Format response
-    const formattedServices = paginatedServices.map((s) => ({
+    const formatted = paginated.map((s) => ({
       maDichVuShop: s.maDichVuShop,
       maDichVuHeThong: s.maDichVuHeThong,
       tenDichVu: s.DichVuHeThong?.tenDichVu,
@@ -1091,8 +891,8 @@ async function getAllShopServices(req, res, next) {
     }));
 
     res.json({
-      data: formattedServices,
-      total: total,
+      data: formatted,
+      total,
       page: Math.floor(offset / limit) + 1,
       totalPages: Math.ceil(total / limit),
     });
