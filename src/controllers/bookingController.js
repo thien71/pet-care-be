@@ -702,7 +702,7 @@ async function getTopShops(req, res, next) {
   }
 }
 
-// ⭐ API MỚI: Lấy danh sách TẤT CẢ dịch vụ của các shop (cho trang chủ)
+// ⭐ API Lấy danh sách TẤT CẢ dịch vụ của các shop
 async function getAllShopServices(req, res, next) {
   try {
     const {
@@ -789,7 +789,7 @@ async function getAllShopServices(req, res, next) {
   }
 }
 
-// ⭐ API MỚI: Lấy chi tiết 1 dịch vụ của shop cụ thể
+// ⭐ API Lấy chi tiết 1 dịch vụ của shop cụ thể
 async function getShopServiceDetail(req, res, next) {
   try {
     const { shopServiceId } = req.params;
