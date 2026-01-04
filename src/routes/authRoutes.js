@@ -1,4 +1,4 @@
-// src/routes/authRoutes.js (UPDATED)
+// src/routes/authRoutes.js
 const express = require("express");
 const router = express.Router();
 const authController = require("../controllers/authController");
@@ -8,11 +8,11 @@ const authController = require("../controllers/authController");
 // Đăng ký
 router.post("/register", authController.register);
 
-// Xác thực email
-router.get("/verify-email", authController.verifyEmail);
+// Xác thực OTP
+router.post("/verify-otp", authController.verifyOTP);
 
-// Gửi lại email xác thực
-router.post("/resend-verification", authController.resendVerification);
+// Gửi lại OTP
+router.post("/resend-otp", authController.resendOTP);
 
 // Đăng nhập thường
 router.post("/login", authController.login);

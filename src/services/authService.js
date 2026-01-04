@@ -1,4 +1,4 @@
-// src/services/authService.js (FIXED)
+// src/services/authService.js
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
@@ -8,7 +8,14 @@ const emailService = require("./emailService");
 const { JWT_SECRET, JWT_EXPIRES_IN, JWT_REFRESH_EXPIRES_IN } = process.env;
 
 /**
- * Tạo token xác thực email
+ * Tạo mã OTP 6 số
+ */
+function generateOTP() {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
+/**
+ * Tạo token reset password
  */
 function generateVerificationToken() {
   return crypto.randomBytes(32).toString("hex");
@@ -27,9 +34,11 @@ async function registerUser({ email, matKhau, hoTen, maVaiTro = 1 }) {
   // Hash mật khẩu
   const hashedPassword = await bcrypt.hash(matKhau, 10);
 
-  // Tạo verification token
-  const verificationToken = generateVerificationToken();
-  const verificationExpires = new Date(Date.now() + 3 * 60 * 1000); // 3 phút
+  // Tạo OTP 6 số
+  const otpCode = generateOTP();
+  const otpExpires = new Date(Date.now() + 3 * 60 * 1000); // 3 phút
+
+  console.log("🔑 Generated OTP:", otpCode, "for email:", email);
 
   // Tạo user mới
   const user = await NguoiDung.create({
@@ -38,8 +47,8 @@ async function registerUser({ email, matKhau, hoTen, maVaiTro = 1 }) {
     hoTen,
     authProvider: "local",
     emailVerified: false,
-    emailVerificationToken: verificationToken,
-    emailVerificationExpires: verificationExpires,
+    emailVerificationToken: otpCode, // Lưu OTP vào trường này
+    emailVerificationExpires: otpExpires,
   });
 
   // Gán vai trò mặc định
@@ -48,11 +57,11 @@ async function registerUser({ email, matKhau, hoTen, maVaiTro = 1 }) {
     maVaiTro: maVaiTro,
   });
 
-  // Gửi email xác thực
+  // Gửi email OTP
   try {
-    await emailService.sendVerificationEmail(email, verificationToken);
+    await emailService.sendVerificationOTP(email, otpCode);
   } catch (error) {
-    console.error("❌ Failed to send verification email:", error);
+    console.error("❌ Failed to send OTP email:", error);
     // Không throw error để user vẫn đăng ký được
   }
 
@@ -60,28 +69,34 @@ async function registerUser({ email, matKhau, hoTen, maVaiTro = 1 }) {
     maNguoiDung: user.maNguoiDung,
     email: user.email,
     hoTen: user.hoTen,
-    message:
-      "Đăng ký thành công! Vui lòng kiểm tra email để xác thực tài khoản.",
+    message: "Đăng ký thành công! Vui lòng kiểm tra email để lấy mã OTP.",
   };
 }
 
 /**
- * Xác thực email
+ * Xác thực email bằng OTP
  */
-async function verifyEmail(token) {
+async function verifyEmailWithOTP(email, otpCode) {
   const user = await NguoiDung.findOne({
-    where: {
-      emailVerificationToken: token,
-    },
+    where: { email },
   });
 
   if (!user) {
-    throw new Error("Token không hợp lệ");
+    throw new Error("Email không tồn tại");
   }
 
-  // Kiểm tra token đã hết hạn chưa
+  if (user.emailVerified) {
+    throw new Error("Email đã được xác thực");
+  }
+
+  // Kiểm tra OTP có khớp không
+  if (user.emailVerificationToken !== otpCode) {
+    throw new Error("Mã OTP không đúng");
+  }
+
+  // Kiểm tra OTP đã hết hạn chưa
   if (user.emailVerificationExpires < new Date()) {
-    throw new Error("Token đã hết hạn");
+    throw new Error("Mã OTP đã hết hạn");
   }
 
   // Cập nhật trạng thái xác thực
@@ -91,13 +106,15 @@ async function verifyEmail(token) {
     emailVerificationExpires: null,
   });
 
+  console.log("✅ Email verified successfully for:", email);
+
   return { message: "Xác thực email thành công!" };
 }
 
 /**
- * Gửi lại email xác thực
+ * Gửi lại mã OTP
  */
-async function resendVerificationEmail(email) {
+async function resendVerificationOTP(email) {
   const user = await NguoiDung.findOne({ where: { email } });
 
   if (!user) {
@@ -108,18 +125,20 @@ async function resendVerificationEmail(email) {
     throw new Error("Email đã được xác thực");
   }
 
-  // Tạo token mới
-  const verificationToken = generateVerificationToken();
-  const verificationExpires = new Date(Date.now() + 3 * 60 * 1000);
+  // Tạo OTP mới
+  const otpCode = generateOTP();
+  const otpExpires = new Date(Date.now() + 3 * 60 * 1000);
+
+  console.log("🔑 Resend OTP:", otpCode, "for email:", email);
 
   await user.update({
-    emailVerificationToken: verificationToken,
-    emailVerificationExpires: verificationExpires,
+    emailVerificationToken: otpCode,
+    emailVerificationExpires: otpExpires,
   });
 
-  await emailService.sendVerificationEmail(email, verificationToken);
+  await emailService.sendVerificationOTP(email, otpCode);
 
-  return { message: "Email xác thực đã được gửi lại" };
+  return { message: "Mã OTP mới đã được gửi đến email của bạn" };
 }
 
 /**
@@ -131,7 +150,7 @@ async function loginUser(email, matKhau) {
     include: [
       {
         model: VaiTro,
-        as: "VaiTros", // ✅ Thêm alias
+        as: "VaiTros",
         through: { attributes: [] },
       },
       {
@@ -158,10 +177,10 @@ async function loginUser(email, matKhau) {
     throw new Error("Email hoặc mật khẩu không đúng");
   }
 
-  // Cảnh báo nếu email chưa xác thực (nhưng vẫn cho đăng nhập)
-  const emailWarning = !user.emailVerified
-    ? "Lưu ý: Email của bạn chưa được xác thực. Vui lòng kiểm tra hộp thư."
-    : null;
+  // Kiểm tra email đã xác thực chưa
+  if (!user.emailVerified) {
+    throw new Error("Vui lòng xác thực email trước khi đăng nhập");
+  }
 
   // Lấy danh sách vai trò
   const roles = user.VaiTros.map((vt) => vt.tenVaiTro);
@@ -190,12 +209,8 @@ async function loginUser(email, matKhau) {
       CuaHang: user.CuaHang,
       VaiTros: user.VaiTros,
     },
-    warning: emailWarning,
   };
 }
-
-// ==================== GOOGLE LOGIN - COMPLETE FUNCTION ====================
-// Chỉ copy phần này vào src/services/authService.js (thay thế hàm loginWithGoogle cũ)
 
 /**
  * Đăng nhập bằng Google
@@ -205,7 +220,6 @@ async function loginWithGoogle(googleProfile) {
 
   console.log("🔐 Google Login:", { email, googleId });
 
-  // Tìm user theo googleId hoặc email
   let user = await NguoiDung.findOne({
     where: {
       [require("sequelize").Op.or]: [{ googleId }, { email }],
@@ -213,7 +227,7 @@ async function loginWithGoogle(googleProfile) {
     include: [
       {
         model: VaiTro,
-        as: "VaiTros", // ✅ Alias
+        as: "VaiTros",
         through: { attributes: [] },
       },
       {
@@ -224,24 +238,14 @@ async function loginWithGoogle(googleProfile) {
   });
 
   if (user) {
-    console.log("👤 User found:", {
-      userId: user.maNguoiDung,
-      email: user.email,
-    });
-
-    // ✅ QUAN TRỌNG: Nếu user đã tồn tại nhưng chưa có googleId hoặc authProvider không phải google
-    // Thì cập nhật
     if (!user.googleId || user.authProvider !== "google") {
-      console.log("🔄 Updating user with Google ID and authProvider...");
-
       await user.update({
-        googleId, // ← Thêm Google ID
-        avatar: picture || user.avatar, // ← Cập nhật avatar
-        emailVerified: true, // ← Mark email as verified
-        authProvider: "google", // ✅ ← CỦA NHÂN: Set authProvider = "google"
+        googleId,
+        avatar: picture || user.avatar,
+        emailVerified: true,
+        authProvider: "google",
       });
 
-      // ✅ QUAN TRỌNG: Reload để lấy data mới cập nhật
       user = await user.reload({
         include: [
           {
@@ -255,41 +259,23 @@ async function loginWithGoogle(googleProfile) {
           },
         ],
       });
-
-      console.log("✅ User updated:", {
-        authProvider: user.authProvider,
-        googleId: user.googleId,
-      });
     }
   } else {
-    // ✅ TẠO USER MỚI
-    console.log("✨ Creating new Google user...");
-
     user = await NguoiDung.create({
       email,
       hoTen: name,
-      googleId, // ← Lưu Google ID
+      googleId,
       avatar: picture,
-      authProvider: "google", // ✅ Set authProvider = "google"
-      emailVerified: true, // ← Google đã verified email
-      matKhau: null, // ← Google users không cần password
+      authProvider: "google",
+      emailVerified: true,
+      matKhau: null,
     });
 
-    console.log("👤 New user created:", {
-      userId: user.maNguoiDung,
-      email: user.email,
-      authProvider: user.authProvider,
-    });
-
-    // Gán vai trò mặc định KHACH_HANG (maVaiTro = 1)
     await NguoiDungVaiTro.create({
       maNguoiDung: user.maNguoiDung,
-      maVaiTro: 1, // KHACH_HANG
+      maVaiTro: 1,
     });
 
-    console.log("✅ Role assigned: KHACH_HANG");
-
-    // Load lại user để có đầy đủ thông tin
     user = await NguoiDung.findByPk(user.maNguoiDung, {
       include: [
         {
@@ -305,17 +291,8 @@ async function loginWithGoogle(googleProfile) {
     });
   }
 
-  // Lấy danh sách vai trò
   const roles = user.VaiTros.map((vt) => vt.tenVaiTro);
 
-  console.log("✅ Google login final check:", {
-    email: user.email,
-    authProvider: user.authProvider,
-    roles: roles,
-    googleId: user.googleId,
-  });
-
-  // Tạo tokens
   const accessToken = jwt.sign({ id: user.maNguoiDung, roles }, JWT_SECRET, {
     expiresIn: JWT_EXPIRES_IN,
   });
@@ -335,7 +312,7 @@ async function loginWithGoogle(googleProfile) {
       soDienThoai: user.soDienThoai,
       diaChi: user.diaChi,
       emailVerified: user.emailVerified,
-      authProvider: user.authProvider, // ✅ Return authProvider
+      authProvider: user.authProvider,
       maCuaHang: user.maCuaHang,
       CuaHang: user.CuaHang,
       VaiTros: user.VaiTros,
@@ -344,13 +321,12 @@ async function loginWithGoogle(googleProfile) {
 }
 
 /**
- * Quên mật khẩu - Gửi email reset
+ * Quên mật khẩu
  */
 async function forgotPassword(email) {
   const user = await NguoiDung.findOne({ where: { email } });
 
   if (!user) {
-    // Không báo lỗi để tránh lộ thông tin user có tồn tại không
     return {
       message: "Nếu email tồn tại, bạn sẽ nhận được link đặt lại mật khẩu",
     };
@@ -362,9 +338,8 @@ async function forgotPassword(email) {
     );
   }
 
-  // Tạo reset token
   const resetToken = generateVerificationToken();
-  const resetExpires = new Date(Date.now() + 60 * 60 * 1000); // 1h
+  const resetExpires = new Date(Date.now() + 60 * 60 * 1000);
 
   await user.update({
     resetPasswordToken: resetToken,
@@ -383,31 +358,25 @@ async function forgotPassword(email) {
  */
 async function resetPassword(token, newPassword) {
   const user = await NguoiDung.findOne({
-    where: {
-      resetPasswordToken: token,
-    },
+    where: { resetPasswordToken: token },
   });
 
   if (!user) {
     throw new Error("Token không hợp lệ");
   }
 
-  // Kiểm tra token đã hết hạn chưa
   if (user.resetPasswordExpires < new Date()) {
     throw new Error("Token đã hết hạn");
   }
 
-  // Hash mật khẩu mới
   const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-  // Cập nhật mật khẩu
   await user.update({
     matKhau: hashedPassword,
     resetPasswordToken: null,
     resetPasswordExpires: null,
   });
 
-  // Gửi email thông báo
   try {
     await emailService.sendPasswordChangedEmail(user.email);
   } catch (error) {
@@ -434,8 +403,8 @@ function refreshAccessToken(refreshToken) {
 
 module.exports = {
   registerUser,
-  verifyEmail,
-  resendVerificationEmail,
+  verifyEmailWithOTP,
+  resendVerificationOTP,
   loginUser,
   loginWithGoogle,
   forgotPassword,
