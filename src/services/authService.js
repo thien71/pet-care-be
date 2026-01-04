@@ -1,4 +1,4 @@
-// src/services/authService.js (UPDATED)
+// src/services/authService.js (FIXED)
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
@@ -131,6 +131,7 @@ async function loginUser(email, matKhau) {
     include: [
       {
         model: VaiTro,
+        as: "VaiTros", // ✅ Thêm alias
         through: { attributes: [] },
       },
       {
@@ -193,11 +194,16 @@ async function loginUser(email, matKhau) {
   };
 }
 
+// ==================== GOOGLE LOGIN - COMPLETE FUNCTION ====================
+// Chỉ copy phần này vào src/services/authService.js (thay thế hàm loginWithGoogle cũ)
+
 /**
  * Đăng nhập bằng Google
  */
 async function loginWithGoogle(googleProfile) {
   const { id: googleId, email, name, picture } = googleProfile;
+
+  console.log("🔐 Google Login:", { email, googleId });
 
   // Tìm user theo googleId hoặc email
   let user = await NguoiDung.findOne({
@@ -207,6 +213,7 @@ async function loginWithGoogle(googleProfile) {
     include: [
       {
         model: VaiTro,
+        as: "VaiTros", // ✅ Alias
         through: { attributes: [] },
       },
       {
@@ -217,37 +224,77 @@ async function loginWithGoogle(googleProfile) {
   });
 
   if (user) {
-    // Nếu user đã tồn tại nhưng chưa có googleId, cập nhật
-    if (!user.googleId) {
+    console.log("👤 User found:", {
+      userId: user.maNguoiDung,
+      email: user.email,
+    });
+
+    // ✅ QUAN TRỌNG: Nếu user đã tồn tại nhưng chưa có googleId hoặc authProvider không phải google
+    // Thì cập nhật
+    if (!user.googleId || user.authProvider !== "google") {
+      console.log("🔄 Updating user with Google ID and authProvider...");
+
       await user.update({
-        googleId,
-        avatar: picture || user.avatar,
-        emailVerified: true, // Google đã verify email
+        googleId, // ← Thêm Google ID
+        avatar: picture || user.avatar, // ← Cập nhật avatar
+        emailVerified: true, // ← Mark email as verified
+        authProvider: "google", // ✅ ← CỦA NHÂN: Set authProvider = "google"
+      });
+
+      // ✅ QUAN TRỌNG: Reload để lấy data mới cập nhật
+      user = await user.reload({
+        include: [
+          {
+            model: VaiTro,
+            as: "VaiTros",
+            through: { attributes: [] },
+          },
+          {
+            model: CuaHang,
+            attributes: ["maCuaHang", "tenCuaHang", "trangThai"],
+          },
+        ],
+      });
+
+      console.log("✅ User updated:", {
+        authProvider: user.authProvider,
+        googleId: user.googleId,
       });
     }
   } else {
-    // Tạo user mới
+    // ✅ TẠO USER MỚI
+    console.log("✨ Creating new Google user...");
+
     user = await NguoiDung.create({
       email,
       hoTen: name,
-      googleId,
+      googleId, // ← Lưu Google ID
       avatar: picture,
-      authProvider: "google",
-      emailVerified: true,
-      matKhau: null, // Google users không có password
+      authProvider: "google", // ✅ Set authProvider = "google"
+      emailVerified: true, // ← Google đã verified email
+      matKhau: null, // ← Google users không cần password
     });
 
-    // Gán vai trò mặc định KHACH_HANG
+    console.log("👤 New user created:", {
+      userId: user.maNguoiDung,
+      email: user.email,
+      authProvider: user.authProvider,
+    });
+
+    // Gán vai trò mặc định KHACH_HANG (maVaiTro = 1)
     await NguoiDungVaiTro.create({
       maNguoiDung: user.maNguoiDung,
       maVaiTro: 1, // KHACH_HANG
     });
 
-    // Load lại để có đầy đủ thông tin
+    console.log("✅ Role assigned: KHACH_HANG");
+
+    // Load lại user để có đầy đủ thông tin
     user = await NguoiDung.findByPk(user.maNguoiDung, {
       include: [
         {
           model: VaiTro,
+          as: "VaiTros",
           through: { attributes: [] },
         },
         {
@@ -260,6 +307,13 @@ async function loginWithGoogle(googleProfile) {
 
   // Lấy danh sách vai trò
   const roles = user.VaiTros.map((vt) => vt.tenVaiTro);
+
+  console.log("✅ Google login final check:", {
+    email: user.email,
+    authProvider: user.authProvider,
+    roles: roles,
+    googleId: user.googleId,
+  });
 
   // Tạo tokens
   const accessToken = jwt.sign({ id: user.maNguoiDung, roles }, JWT_SECRET, {
@@ -281,6 +335,7 @@ async function loginWithGoogle(googleProfile) {
       soDienThoai: user.soDienThoai,
       diaChi: user.diaChi,
       emailVerified: user.emailVerified,
+      authProvider: user.authProvider, // ✅ Return authProvider
       maCuaHang: user.maCuaHang,
       CuaHang: user.CuaHang,
       VaiTros: user.VaiTros,
