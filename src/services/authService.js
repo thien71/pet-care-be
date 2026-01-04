@@ -29,7 +29,7 @@ async function registerUser({ email, matKhau, hoTen, maVaiTro = 1 }) {
 
   // Tạo verification token
   const verificationToken = generateVerificationToken();
-  const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24h
+  const verificationExpires = new Date(Date.now() + 3 * 60 * 1000); // 3 phút
 
   // Tạo user mới
   const user = await NguoiDung.create({
@@ -110,7 +110,7 @@ async function resendVerificationEmail(email) {
 
   // Tạo token mới
   const verificationToken = generateVerificationToken();
-  const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+  const verificationExpires = new Date(Date.now() + 3 * 60 * 1000);
 
   await user.update({
     emailVerificationToken: verificationToken,
