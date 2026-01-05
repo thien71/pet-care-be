@@ -1,8 +1,44 @@
 // src/routes/serviceRoutes.js
 const express = require("express");
 const router = express.Router();
+const multer = require("multer");
+const path = require("path");
+const fs = require("fs");
 const { verifyToken, checkRole } = require("../middlewares/authMiddlewares");
 const serviceController = require("../controllers/serviceController");
+
+// ==================== MULTER CONFIG FOR SERVICE IMAGES ====================
+const servicesDir = path.join(__dirname, "../../uploads/services");
+if (!fs.existsSync(servicesDir)) {
+  fs.mkdirSync(servicesDir, { recursive: true });
+}
+
+const serviceStorage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, servicesDir),
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    const ext = path.extname(file.originalname);
+    const nameWithoutExt = path.basename(file.originalname, ext);
+    const safeName = nameWithoutExt.replace(/[^a-zA-Z0-9]/g, "_");
+    cb(null, "service-" + safeName + "-" + uniqueSuffix + ext);
+  },
+});
+
+const serviceUpload = multer({
+  storage: serviceStorage,
+  limits: { fileSize: 5 * 1024 * 1024, files: 1 },
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = /jpeg|jpg|png|webp/;
+    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+    const mimetype = allowedTypes.test(file.mimetype);
+
+    if (mimetype && extname) {
+      return cb(null, true);
+    } else {
+      cb(new Error("Only image files (JPEG, PNG, WebP) are allowed!"));
+    }
+  },
+});
 
 // ==================== PUBLIC ROUTES ====================
 router.get("/public/pet-types", serviceController.getPublicPetTypes);
@@ -32,8 +68,8 @@ router.delete("/system/:id", verifyToken, checkRole(["QUAN_TRI_VIEN"]), serviceC
 
 // ==================== OWNER - SHOP SERVICES ====================
 router.get("/shop", verifyToken, checkRole(["CHU_CUA_HANG"]), serviceController.getShopServices);
-router.post("/shop", verifyToken, checkRole(["CHU_CUA_HANG"]), serviceController.addServiceToShop);
-router.put("/shop/:id", verifyToken, checkRole(["CHU_CUA_HANG"]), serviceController.updateShopService);
+router.post("/shop", verifyToken, checkRole(["CHU_CUA_HANG"]), serviceUpload.single("hinhAnh"), serviceController.addServiceToShop);
+router.put("/shop/:id", verifyToken, checkRole(["CHU_CUA_HANG"]), serviceUpload.single("hinhAnh"), serviceController.updateShopService);
 router.delete("/shop/:id", verifyToken, checkRole(["CHU_CUA_HANG"]), serviceController.deleteShopService);
 
 // ==================== SERVICE PROPOSALS ====================

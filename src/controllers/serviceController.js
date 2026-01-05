@@ -120,7 +120,6 @@ async function getShopServicesByPetType(req, res, next) {
   try {
     const { shopId, petTypeId } = req.params;
     const services = await serviceManagementService.getShopServicesByPetType(shopId, petTypeId);
-
     res.json({ data: services });
   } catch (err) {
     next(err);
@@ -166,7 +165,19 @@ async function getShopServices(req, res, next) {
 
 async function addServiceToShop(req, res, next) {
   try {
-    const service = await serviceManagementService.addServiceToShop(req.user.id, req.body);
+    // Lấy image path nếu có upload
+    const hinhAnh = req.file ? `/uploads/services/${req.file.filename}` : null;
+
+    // Parse data từ FormData
+    const serviceData = {
+      maDichVuHeThong: parseInt(req.body.maDichVuHeThong),
+      gia: parseFloat(req.body.gia),
+      hinhAnh,
+      moTaShop: req.body.moTaShop || null,
+      thoiLuongShop: req.body.thoiLuongShop ? parseInt(req.body.thoiLuongShop) : null,
+    };
+
+    const service = await serviceManagementService.addServiceToShop(req.user.id, serviceData);
     res.status(201).json({ message: "Service added", data: service });
   } catch (err) {
     next(err);
@@ -175,7 +186,19 @@ async function addServiceToShop(req, res, next) {
 
 async function updateShopService(req, res, next) {
   try {
-    const service = await serviceManagementService.updateShopService(req.user.id, req.params.id, req.body);
+    // Lấy image path nếu có upload mới
+    const updateData = {
+      gia: parseFloat(req.body.gia),
+      moTaShop: req.body.moTaShop || null,
+      thoiLuongShop: req.body.thoiLuongShop ? parseInt(req.body.thoiLuongShop) : null,
+    };
+
+    // Nếu có file mới thì cập nhật
+    if (req.file) {
+      updateData.hinhAnh = `/uploads/services/${req.file.filename}`;
+    }
+
+    const service = await serviceManagementService.updateShopService(req.user.id, req.params.id, updateData);
     res.json({ message: "Service updated", data: service });
   } catch (err) {
     next(err);

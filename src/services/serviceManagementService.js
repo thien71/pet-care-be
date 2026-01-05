@@ -255,13 +255,16 @@ async function getShopServices(userId) {
     maCuaHang: s.maCuaHang,
     gia: s.gia,
     trangThai: s.trangThai,
+    hinhAnh: s.hinhAnh,
+    moTaShop: s.moTaShop,
+    thoiLuongShop: s.thoiLuongShop,
     tenDichVu: s.DichVuHeThong?.tenDichVu,
     moTa: s.DichVuHeThong?.moTa,
     thoiLuong: s.DichVuHeThong?.thoiLuong,
   }));
 }
 
-async function addServiceToShop(userId, { maDichVuHeThong, gia }) {
+async function addServiceToShop(userId, { maDichVuHeThong, gia, hinhAnh, moTaShop, thoiLuongShop }) {
   const user = await NguoiDung.findByPk(userId);
   if (!user || !user.maCuaHang) {
     throw new Error("Shop not found");
@@ -282,11 +285,14 @@ async function addServiceToShop(userId, { maDichVuHeThong, gia }) {
     maDichVuHeThong,
     maCuaHang: user.maCuaHang,
     gia,
+    hinhAnh,
+    moTaShop,
+    thoiLuongShop,
     trangThai: 1,
   });
 }
 
-async function updateShopService(userId, serviceId, { gia }) {
+async function updateShopService(userId, serviceId, { gia, hinhAnh, moTaShop, thoiLuongShop }) {
   const service = await DichVuCuaShop.findByPk(serviceId);
   if (!service) {
     throw new Error("Service not found");
@@ -297,7 +303,14 @@ async function updateShopService(userId, serviceId, { gia }) {
     throw new Error("Not your shop");
   }
 
-  await service.update({ gia });
+  const updateData = { gia, moTaShop, thoiLuongShop };
+
+  // Chỉ cập nhật hinhAnh nếu có giá trị mới
+  if (hinhAnh !== undefined) {
+    updateData.hinhAnh = hinhAnh;
+  }
+
+  await service.update(updateData);
   return service;
 }
 
