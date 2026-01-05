@@ -116,6 +116,17 @@ async function getServiceDetail(req, res, next) {
   }
 }
 
+async function getShopServicesByPetType(req, res, next) {
+  try {
+    const { shopId, petTypeId } = req.params;
+    const services = await serviceManagementService.getShopServicesByPetType(shopId, petTypeId);
+
+    res.json({ data: services });
+  } catch (err) {
+    next(err);
+  }
+}
+
 async function createSystemService(req, res, next) {
   try {
     const service = await serviceManagementService.createSystemService(req.body);
@@ -245,23 +256,29 @@ module.exports = {
   createRole,
   updateRole,
   deleteRole,
+
   getPetTypes,
   getPublicPetTypes,
   createPetType,
   updatePetType,
   deletePetType,
+
   getSystemServices,
   getPublicServices,
   getServiceDetail,
+  getShopServicesByPetType,
+
   createSystemService,
   updateSystemService,
   deleteSystemService,
+
   getShopServices,
   addServiceToShop,
   updateShopService,
   deleteShopService,
   getAllShopServices,
   getShopServiceDetail,
+
   proposeNewService,
   getServiceProposals,
   approveServiceProposal,

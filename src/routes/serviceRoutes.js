@@ -10,6 +10,7 @@ router.get("/public/system", serviceController.getPublicServices);
 router.get("/public/system/:serviceId", serviceController.getServiceDetail);
 router.get("/public/shops", serviceController.getAllShopServices);
 router.get("/public/shops/:shopServiceId", serviceController.getShopServiceDetail);
+router.get("/shops/:shopId/pet-type/:petTypeId", verifyToken, checkRole(["KHACH_HANG"]), serviceController.getShopServicesByPetType);
 
 // ==================== ADMIN - ROLES ====================
 router.get("/roles", verifyToken, checkRole(["QUAN_TRI_VIEN"]), serviceController.getRoles);

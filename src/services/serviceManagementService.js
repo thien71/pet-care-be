@@ -154,6 +154,57 @@ async function getServiceDetail(serviceId) {
   };
 }
 
+// Helper function - Lọc dịch vụ theo loài thú cưng
+function filterServicesByPetType(shopServices, petTypeName) {
+  const petTypeKeywords = petTypeName.toLowerCase().split(/\s+/);
+
+  return shopServices.filter((service) => {
+    const serviceName = service.DichVuHeThong?.tenDichVu?.toLowerCase() || "";
+    const serviceDesc = service.DichVuHeThong?.moTa?.toLowerCase() || "";
+    const fullText = `${serviceName} ${serviceDesc}`;
+
+    return petTypeKeywords.some((keyword) => fullText.includes(keyword));
+  });
+}
+
+//Lấy danh sách dịch vụ của cửa hàng theo loài thú cưng
+async function getShopServicesByPetType(shopId, petTypeId) {
+  const { LoaiThuCung, DichVuCuaShop, DichVuHeThong } = require("../models");
+
+  // Kiểm tra loài thú cưng tồn tại
+  const petType = await LoaiThuCung.findByPk(petTypeId);
+  if (!petType) {
+    throw new Error("Pet type not found");
+  }
+
+  // Lấy tất cả dịch vụ của shop
+  const shopServices = await DichVuCuaShop.findAll({
+    where: {
+      maCuaHang: shopId,
+      trangThai: 1,
+    },
+    include: [
+      {
+        model: DichVuHeThong,
+        attributes: ["maDichVu", "tenDichVu", "moTa", "thoiLuong"],
+      },
+    ],
+  });
+
+  // Lọc theo loài
+  const filteredServices = filterServicesByPetType(shopServices, petType.tenLoai);
+
+  // Format response
+  return filteredServices.map((s) => ({
+    maDichVuShop: s.maDichVuShop,
+    maDichVuHeThong: s.maDichVuHeThong,
+    tenDichVu: s.DichVuHeThong?.tenDichVu,
+    moTa: s.DichVuHeThong?.moTa,
+    thoiLuong: s.DichVuHeThong?.thoiLuong,
+    gia: s.gia,
+  }));
+}
+
 async function createSystemService({ tenDichVu, moTa, thoiLuong }) {
   return await DichVuHeThong.create({
     tenDichVu,
@@ -476,23 +527,29 @@ module.exports = {
   createRole,
   updateRole,
   deleteRole,
+
   getAllPetTypes,
   getPublicPetTypes,
   createPetType,
   updatePetType,
   deletePetType,
+
   getAllSystemServices,
   getPublicServices,
   getServiceDetail,
+  getShopServicesByPetType,
+
   createSystemService,
   updateSystemService,
   deleteSystemService,
+
   getShopServices,
   addServiceToShop,
   updateShopService,
   deleteShopService,
   getAllShopServices,
   getShopServiceDetail,
+
   proposeNewService,
   getServiceProposals,
   approveServiceProposal,
