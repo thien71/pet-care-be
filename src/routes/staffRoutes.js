@@ -11,6 +11,7 @@ router.get("/schedule", verifyToken, checkRole(["LE_TAN", "KY_THUAT_VIEN"]), sta
 router.get("/employees", verifyToken, checkRole(["CHU_CUA_HANG"]), staffController.getEmployees);
 router.post("/employees", verifyToken, checkRole(["CHU_CUA_HANG"]), staffController.addEmployee);
 router.delete("/employees/:id", verifyToken, checkRole(["CHU_CUA_HANG"]), staffController.deleteEmployee);
+router.put("/employees/:id/toggle-status", verifyToken, checkRole(["CHU_CUA_HANG"]), staffController.toggleEmployeeStatus);
 
 // ==================== SHIFT MANAGEMENT ====================
 router.get("/shifts", verifyToken, checkRole(["CHU_CUA_HANG"]), staffController.getShifts);

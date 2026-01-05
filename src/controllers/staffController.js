@@ -25,7 +25,7 @@ async function addEmployee(req, res, next) {
   try {
     const employee = await staffService.addEmployee(req.user.id, req.body);
     res.status(201).json({
-      message: "Employee added",
+      message: "Thêm nhân viên thành công! Email thiết lập mật khẩu đã được gửi.",
       data: employee,
     });
   } catch (err) {
@@ -37,6 +37,15 @@ async function deleteEmployee(req, res, next) {
   try {
     await staffService.deleteEmployee(req.user.id, req.params.id);
     res.json({ message: "Employee deleted" });
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function toggleEmployeeStatus(req, res, next) {
+  try {
+    const result = await staffService.toggleEmployeeStatus(req.user.id, req.params.id);
+    res.json(result);
   } catch (err) {
     next(err);
   }
@@ -89,6 +98,7 @@ module.exports = {
   getEmployees,
   addEmployee,
   deleteEmployee,
+  toggleEmployeeStatus,
   getShifts,
   assignShift,
   bulkAssignShifts,

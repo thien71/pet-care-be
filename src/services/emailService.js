@@ -196,8 +196,83 @@ async function sendPasswordChangedEmail(email) {
   }
 }
 
+/**
+ * Gửi email thiết lập mật khẩu cho nhân viên mới
+ */
+async function sendEmployeeSetupEmail(email, hoTen, setupToken) {
+  const setupUrl = `${process.env.FRONTEND_URL}/employee/setup-password?token=${setupToken}`;
+
+  const mailOptions = {
+    from: `"Pet Care Da Nang" <${process.env.EMAIL_USER}>`,
+    to: email,
+    subject: "Thiết lập tài khoản nhân viên - Pet Care Da Nang",
+    html: `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 10px; }
+          .header { background: linear-gradient(135deg, #8e2800 0%, #c43a0e 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+          .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
+          .button { display: inline-block; padding: 15px 30px; background: #8e2800; color: white; text-decoration: none; border-radius: 5px; font-weight: bold; margin: 20px 0; }
+          .warning { background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0; border-radius: 5px; }
+          .footer { text-align: center; margin-top: 30px; color: #777; font-size: 12px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>Pet Care Da Nang</h1>
+            <p>Chào mừng đến với đội ngũ của chúng tôi!</p>
+          </div>
+          <div class="content">
+            <h2>Xin chào ${hoTen}!</h2>
+            <p>Bạn đã được thêm vào hệ thống Pet Care Da Nang với vai trò nhân viên.</p>
+            <p>Để bắt đầu làm việc, vui lòng nhấn vào nút bên dưới để thiết lập mật khẩu cho tài khoản của bạn:</p>
+              <div style="text-align: center;">
+                <a href="${setupUrl}" class="button" style="color:#fff;text-decoration:none;">THIẾT LẬP MẬT KHẨU</a>
+              </div>
+            <p>Hoặc copy link sau vào trình duyệt:</p>
+            <p style="word-break: break-all; background: #fff; padding: 10px; border-radius: 5px; border: 1px solid #ddd;">
+              ${setupUrl}
+            </p>
+            
+            <div class="warning">
+              <strong>⚠️ Lưu ý quan trọng:</strong>
+              <ul style="margin: 10px 0 0 0; padding-left: 20px;">
+                <li>Link này chỉ có hiệu lực trong vòng <strong>24 giờ</strong></li>
+                <li>Sau khi thiết lập mật khẩu, bạn có thể đăng nhập vào hệ thống</li>
+                <li>Email đăng nhập của bạn là: <strong>${email}</strong></li>
+                <li>Không chia sẻ link này với bất kỳ ai</li>
+              </ul>
+            </div>
+
+            <p style="color: #666; font-size: 14px; margin-top: 20px;">
+              Nếu bạn cần hỗ trợ, vui lòng liên hệ: <strong>thien712k3@gmail.com</strong>
+            </p>
+          </div>
+          <div class="footer">
+            <p>&copy; 2024 Pet Care Da Nang - Nguyễn Văn Thanh Thiện</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `,
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    console.log("Employee setup email sent to:", email);
+  } catch (error) {
+    console.error("Error sending employee setup email:", error);
+    throw new Error("Failed to send employee setup email");
+  }
+}
+
 module.exports = {
   sendVerificationOTP,
   sendResetPasswordEmail,
   sendPasswordChangedEmail,
+  sendEmployeeSetupEmail,
 };

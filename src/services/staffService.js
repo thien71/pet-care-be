@@ -1,6 +1,8 @@
 // src/services/staffService.js
 const { NguoiDung, VaiTro, NguoiDungVaiTro, HoSoNhanVien, GanCaLamViec, CaLamViec, CuaHang } = require("../models");
 const bcrypt = require("bcrypt");
+const crypto = require("crypto");
+const emailService = require("./emailService");
 
 // ==================== SCHEDULE ====================
 async function getMySchedule(userId) {
@@ -67,28 +69,33 @@ async function getEmployees(userId) {
 async function addEmployee(userId, { email, hoTen, soDienThoai, maVaiTro, kinhNghiem, chungChi }) {
   const currentUser = await NguoiDung.findByPk(userId);
   if (!currentUser || !currentUser.maCuaHang) {
-    throw new Error("Shop not found");
+    throw new Error("Không tìm thấy cửa hàng");
   }
 
   const existingUser = await NguoiDung.findOne({ where: { email } });
   if (existingUser) {
-    throw new Error("Email already exists");
+    throw new Error("Email đã tồn tại");
   }
 
   if (![4, 5].includes(maVaiTro)) {
     throw new Error("Can only add staff roles (LE_TAN, KY_THUAT_VIEN)");
   }
 
-  const defaultPassword = email.split("@")[0] + "123";
-  const hashedPassword = await bcrypt.hash(defaultPassword, 10);
+  // ⭐ Tạo token setup password thay vì tự sinh mật khẩu
+  const setupToken = crypto.randomBytes(32).toString("hex");
+  const setupExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 giờ
 
   const newEmployee = await NguoiDung.create({
     email,
     hoTen,
     soDienThoai,
     maCuaHang: currentUser.maCuaHang,
-    matKhau: hashedPassword,
+    matKhau: null,
     trangThai: 1,
+    emailVerified: true,
+    resetPasswordToken: setupToken,
+    resetPasswordExpires: setupExpires,
+    authProvider: "local",
   });
 
   await NguoiDungVaiTro.create({
@@ -105,40 +112,71 @@ async function addEmployee(userId, { email, hoTen, soDienThoai, maVaiTro, kinhNg
     });
   }
 
-  return {
-    ...newEmployee.dataValues,
-    defaultPassword,
-  };
+  // ⭐ Gửi email setup password
+  try {
+    await emailService.sendEmployeeSetupEmail(email, hoTen, setupToken);
+  } catch (error) {
+    console.error("Gửi email setup password thất bại:", error);
+    // Không throw error để vẫn tạo được nhân viên
+  }
+
+  return newEmployee;
 }
 
 async function deleteEmployee(userId, employeeId) {
   const user = await NguoiDung.findByPk(employeeId);
   if (!user) {
-    throw new Error("Employee not found");
+    throw new Error("Nhân viên không tồn tại");
   }
 
   const currentUser = await NguoiDung.findByPk(userId);
   if (user.maCuaHang !== currentUser.maCuaHang) {
-    throw new Error("Not your employee");
+    throw new Error("Không phải nhân viên của bạn");
   }
 
   const shop = await CuaHang.findByPk(currentUser.maCuaHang);
   if (user.maNguoiDung === shop.nguoiDaiDien) {
-    throw new Error("Cannot delete shop owner");
+    throw new Error("Không thể xóa chủ cửa hàng");
   }
 
   await HoSoNhanVien.destroy({ where: { maNguoiDung: employeeId } });
   await NguoiDungVaiTro.destroy({ where: { maNguoiDung: employeeId } });
   await user.destroy();
 
-  return { message: "Employee deleted" };
+  return { message: "Nhân viên đã được xoá" };
+}
+
+async function toggleEmployeeStatus(userId, employeeId) {
+  const employee = await NguoiDung.findByPk(employeeId);
+  if (!employee) {
+    throw new Error("Nhân viên không tồn tại");
+  }
+
+  const currentUser = await NguoiDung.findByPk(userId);
+  if (employee.maCuaHang !== currentUser.maCuaHang) {
+    throw new Error("Không phải nhân viên của bạn");
+  }
+
+  const shop = await CuaHang.findByPk(currentUser.maCuaHang);
+  if (employee.maNguoiDung === shop.nguoiDaiDien) {
+    throw new Error("Không thể vô hiệu hóa chủ cửa hàng");
+  }
+
+  // Toggle status: 1 = active, 0 = disabled
+  const newStatus = employee.trangThai === 1 ? 0 : 1;
+  await employee.update({ trangThai: newStatus });
+
+  return {
+    message: newStatus === 1 ? "Kích hoạt tài khoản thành công" : "Vô hiệu hóa tài khoản thành công",
+    trangThai: newStatus,
+  };
 }
 
 // ==================== SHIFT MANAGEMENT ====================
 async function getShifts(userId) {
   const user = await NguoiDung.findByPk(userId);
   if (!user || !user.maCuaHang) {
-    throw new Error("Shop not found");
+    throw new Error("Không tìm thấy cửa hàng");
   }
 
   return await GanCaLamViec.findAll({
@@ -165,7 +203,7 @@ async function assignShift(userId, { maNhanVien, maCa, ngayLam }) {
 
   const employee = await NguoiDung.findByPk(maNhanVien);
   if (!employee || employee.maCuaHang !== currentUser.maCuaHang) {
-    throw new Error("Employee not in your shop");
+    throw new Error("Nhân viên không thuộc cửa hàng của bạn");
   }
 
   const existing = await GanCaLamViec.findOne({
@@ -177,7 +215,7 @@ async function assignShift(userId, { maNhanVien, maCa, ngayLam }) {
   });
 
   if (existing) {
-    throw new Error("Shift already assigned");
+    throw new Error("Ca làm việc đã được phân công");
   }
 
   return await GanCaLamViec.create({
@@ -191,13 +229,13 @@ async function assignShift(userId, { maNhanVien, maCa, ngayLam }) {
 async function bulkAssignShifts(userId, assignments) {
   const currentUser = await NguoiDung.findByPk(userId);
   if (!currentUser || !currentUser.maCuaHang) {
-    throw new Error("Shop not found");
+    throw new Error("Không tìm thấy cửa hàng");
   }
 
   for (const assign of assignments) {
     const employee = await NguoiDung.findByPk(assign.maNhanVien);
     if (!employee || employee.maCuaHang !== currentUser.maCuaHang) {
-      throw new Error("Employee not in your shop");
+      throw new Error("Nhân viên không thuộc cửa hàng của bạn");
     }
   }
 
@@ -216,16 +254,16 @@ async function bulkAssignShifts(userId, assignments) {
 async function removeShift(userId, shiftId) {
   const shift = await GanCaLamViec.findByPk(shiftId);
   if (!shift) {
-    throw new Error("Shift not found");
+    throw new Error("Không tìm thấy ca làm việc");
   }
 
   const user = await NguoiDung.findByPk(userId);
   if (shift.maCuaHang !== user.maCuaHang) {
-    throw new Error("Not your shift");
+    throw new Error("Không phải ca làm việc của bạn");
   }
 
   await shift.destroy();
-  return { message: "Shift removed" };
+  return { message: "Ca làm việc đã được xóa" };
 }
 
 module.exports = {
@@ -233,6 +271,7 @@ module.exports = {
   getEmployees,
   addEmployee,
   deleteEmployee,
+  toggleEmployeeStatus,
   getShifts,
   assignShift,
   bulkAssignShifts,
