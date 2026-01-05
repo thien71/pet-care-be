@@ -1,20 +1,18 @@
-// src/routes/index.js (Backend)
-// Dùng file này để đăng ký tất cả routes
-
+// src/routes/index.js
 const authRoutes = require("./authRoutes");
-const adminRoutes = require("./adminRoutes");
-const ownerRoutes = require("./ownerRoutes");
 const userRoutes = require("./userRoutes");
-const customerRoutes = require("./customerRoutes");
+const shopRoutes = require("./shopRoutes");
+const serviceRoutes = require("./serviceRoutes");
 const bookingRoutes = require("./bookingRoutes");
+const paymentRoutes = require("./paymentRoutes");
 const staffRoutes = require("./staffRoutes");
 
 module.exports = (app) => {
   app.use("/api/auth", authRoutes);
-  app.use("/api/admin", adminRoutes);
-  app.use("/api/owner", ownerRoutes);
-  app.use("/api/staff", staffRoutes);
-  app.use("/api/customer", customerRoutes);
-  app.use("/api/booking", bookingRoutes);
   app.use("/api/users", userRoutes);
+  app.use("/api/shops", shopRoutes);
+  app.use("/api/services", serviceRoutes);
+  app.use("/api/bookings", bookingRoutes);
+  app.use("/api/payments", paymentRoutes);
+  app.use("/api/staff", staffRoutes);
 };
