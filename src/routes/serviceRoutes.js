@@ -25,7 +25,7 @@ router.put("/pet-types/:id", verifyToken, checkRole(["QUAN_TRI_VIEN"]), serviceC
 router.delete("/pet-types/:id", verifyToken, checkRole(["QUAN_TRI_VIEN"]), serviceController.deletePetType);
 
 // ==================== ADMIN - SYSTEM SERVICES ====================
-router.get("/system", verifyToken, checkRole(["QUAN_TRI_VIEN"]), serviceController.getSystemServices);
+router.get("/system", verifyToken, checkRole(["QUAN_TRI_VIEN", "CHU_CUA_HANG"]), serviceController.getSystemServices);
 router.post("/system", verifyToken, checkRole(["QUAN_TRI_VIEN"]), serviceController.createSystemService);
 router.put("/system/:id", verifyToken, checkRole(["QUAN_TRI_VIEN"]), serviceController.updateSystemService);
 router.delete("/system/:id", verifyToken, checkRole(["QUAN_TRI_VIEN"]), serviceController.deleteSystemService);
