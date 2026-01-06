@@ -15,8 +15,32 @@ const ThanhToanShop = sequelize.define(
     thoiGianBatDau: { type: DataTypes.DATEONLY, allowNull: false },
     thoiGianKetThuc: { type: DataTypes.DATEONLY, allowNull: false },
     trangThai: {
-      type: DataTypes.ENUM("DA_THANH_TOAN", "CHUA_THANH_TOAN", "QUA_HAN"),
+      type: DataTypes.ENUM("CHUA_THANH_TOAN", "CHO_XAC_NHAN", "DA_THANH_TOAN", "TU_CHOI", "QUA_HAN"),
       defaultValue: "CHUA_THANH_TOAN",
+    },
+    bienLaiThanhToan: {
+      type: DataTypes.STRING(255),
+      allowNull: true,
+      comment: "Đường dẫn ảnh biên lai",
+    },
+    ghiChu: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
+    ngayThanhToan: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      comment: "Ngày chủ shop upload biên lai",
+    },
+    ngayXacNhan: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      comment: "Ngày admin xác nhận",
+    },
+    nguoiXacNhan: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      comment: "Admin ID",
     },
     ngayTao: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
   },

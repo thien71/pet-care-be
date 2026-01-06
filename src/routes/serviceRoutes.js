@@ -5,6 +5,7 @@ const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
 const { verifyToken, checkRole } = require("../middlewares/authMiddlewares");
+const { checkShopActive } = require("../middlewares/shopStatusMiddleware");
 const serviceController = require("../controllers/serviceController");
 
 // ==================== MULTER CONFIG FOR SERVICE IMAGES ====================
@@ -67,13 +68,27 @@ router.put("/system/:id", verifyToken, checkRole(["QUAN_TRI_VIEN"]), serviceCont
 router.delete("/system/:id", verifyToken, checkRole(["QUAN_TRI_VIEN"]), serviceController.deleteSystemService);
 
 // ==================== OWNER - SHOP SERVICES ====================
-router.get("/shop", verifyToken, checkRole(["CHU_CUA_HANG"]), serviceController.getShopServices);
-router.post("/shop", verifyToken, checkRole(["CHU_CUA_HANG"]), serviceUpload.single("hinhAnh"), serviceController.addServiceToShop);
-router.put("/shop/:id", verifyToken, checkRole(["CHU_CUA_HANG"]), serviceUpload.single("hinhAnh"), serviceController.updateShopService);
-router.delete("/shop/:id", verifyToken, checkRole(["CHU_CUA_HANG"]), serviceController.deleteShopService);
+router.get("/shop", verifyToken, checkRole(["CHU_CUA_HANG"], checkShopActive), serviceController.getShopServices);
+router.post(
+  "/shop",
+  verifyToken,
+  checkRole(["CHU_CUA_HANG"]),
+  serviceUpload.single("hinhAnh"),
+  checkShopActive,
+  serviceController.addServiceToShop
+);
+router.put(
+  "/shop/:id",
+  verifyToken,
+  checkRole(["CHU_CUA_HANG"]),
+  serviceUpload.single("hinhAnh"),
+  checkShopActive,
+  serviceController.updateShopService
+);
+router.delete("/shop/:id", verifyToken, checkRole(["CHU_CUA_HANG"]), checkShopActive, serviceController.deleteShopService);
 
 // ==================== SERVICE PROPOSALS ====================
-router.post("/proposals", verifyToken, checkRole(["CHU_CUA_HANG"]), serviceController.proposeNewService);
+router.post("/proposals", verifyToken, checkRole(["CHU_CUA_HANG"]), checkShopActive, serviceController.proposeNewService);
 router.get("/proposals", verifyToken, checkRole(["QUAN_TRI_VIEN"]), serviceController.getServiceProposals);
 router.put("/proposals/:id/approve", verifyToken, checkRole(["QUAN_TRI_VIEN"]), serviceController.approveServiceProposal);
 router.put("/proposals/:id/reject", verifyToken, checkRole(["QUAN_TRI_VIEN"]), serviceController.rejectServiceProposal);

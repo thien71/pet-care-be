@@ -1,5 +1,8 @@
 // src/services/paymentService.js
 const { GoiThanhToan, ThanhToanShop, CuaHang, NguoiDung } = require("../models");
+const multer = require("multer");
+const path = require("path");
+const fs = require("fs");
 
 // ==================== PAYMENT PACKAGES ====================
 async function getAllPaymentPackages() {
@@ -92,23 +95,107 @@ async function getPaymentConfirmations(trangThai) {
   });
 }
 
-async function confirmPayment(paymentId) {
+// ==================== OWNER - UPLOAD BIÊN LAI ====================
+async function uploadPaymentProof(userId, paymentId, file, note) {
+  const user = await NguoiDung.findByPk(userId);
+  if (!user || !user.maCuaHang) {
+    throw new Error("Shop not found");
+  }
+
   const payment = await ThanhToanShop.findByPk(paymentId);
   if (!payment) {
     throw new Error("Payment not found");
   }
 
-  await payment.update({ trangThai: "DA_THANH_TOAN" });
+  if (payment.maCuaHang !== user.maCuaHang) {
+    throw new Error("Not your payment");
+  }
+
+  if (payment.trangThai !== "CHUA_THANH_TOAN" && payment.trangThai !== "TU_CHOI") {
+    throw new Error("Không thể upload biên lai cho đơn thanh toán này");
+  }
+
+  const bienLaiPath = `/uploads/payments/${file.filename}`;
+
+  await payment.update({
+    bienLaiThanhToan: bienLaiPath,
+    ghiChu: note || null,
+    ngayThanhToan: new Date(),
+    trangThai: "CHO_XAC_NHAN",
+  });
+
   return payment;
 }
 
-async function rejectPayment(paymentId) {
-  const payment = await ThanhToanShop.findByPk(paymentId);
+// ==================== ADMIN - XÁC NHẬN THANH TOÁN ====================
+async function confirmPayment(paymentId, adminId) {
+  const payment = await ThanhToanShop.findByPk(paymentId, {
+    include: [{ model: CuaHang }],
+  });
+
   if (!payment) {
     throw new Error("Payment not found");
   }
 
-  await payment.update({ trangThai: "CHUA_THANH_TOAN" });
+  if (payment.trangThai !== "CHO_XAC_NHAN") {
+    throw new Error("Chỉ xác nhận được đơn đang chờ");
+  }
+
+  // Cập nhật trạng thái thanh toán
+  await payment.update({
+    trangThai: "DA_THANH_TOAN",
+    ngayXacNhan: new Date(),
+    nguoiXacNhan: adminId,
+  });
+
+  // ⭐ Kích hoạt lại shop
+  const shop = await CuaHang.findByPk(payment.maCuaHang);
+  if (shop.trangThai === "BI_KHOA") {
+    await shop.update({ trangThai: "HOAT_DONG" });
+  }
+
+  // Gửi email thông báo
+  const ownerUser = await NguoiDung.findOne({
+    where: { maCuaHang: payment.maCuaHang },
+  });
+
+  if (ownerUser && ownerUser.email) {
+    // TODO: Gửi email xác nhận
+    console.log(`✉️ Send payment confirmation email to ${ownerUser.email}`);
+  }
+
+  return payment;
+}
+
+// ==================== ADMIN - TỪ CHỐI THANH TOÁN ====================
+async function rejectPayment(paymentId, adminId, reason) {
+  const payment = await ThanhToanShop.findByPk(paymentId);
+
+  if (!payment) {
+    throw new Error("Payment not found");
+  }
+
+  if (payment.trangThai !== "CHO_XAC_NHAN") {
+    throw new Error("Chỉ từ chối được đơn đang chờ");
+  }
+
+  await payment.update({
+    trangThai: "TU_CHOI",
+    ghiChu: reason,
+    ngayXacNhan: new Date(),
+    nguoiXacNhan: adminId,
+  });
+
+  // Gửi email thông báo từ chối
+  const ownerUser = await NguoiDung.findOne({
+    where: { maCuaHang: payment.maCuaHang },
+  });
+
+  if (ownerUser && ownerUser.email) {
+    // TODO: Gửi email từ chối + lý do
+    console.log(`✉️ Send rejection email to ${ownerUser.email}`);
+  }
+
   return payment;
 }
 
@@ -120,6 +207,7 @@ module.exports = {
   getMyPayments,
   purchasePackage,
   getPaymentConfirmations,
+  uploadPaymentProof,
   confirmPayment,
   rejectPayment,
 };

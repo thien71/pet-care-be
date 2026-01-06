@@ -184,8 +184,23 @@ async function updateShopInfo(userId, { tenCuaHang, diaChi, soDienThoai, moTa, k
 // ==================== PUBLIC - SHOP LISTING ====================
 async function getPublicShops() {
   const shops = await CuaHang.findAll({
-    where: { trangThai: "HOAT_DONG" },
+    where: {
+      trangThai: "HOAT_DONG",
+    },
     attributes: ["maCuaHang", "tenCuaHang", "diaChi", "soDienThoai", "moTa", "anhCuaHang", "kinhDo", "viDo"],
+    include: [
+      {
+        model: ThanhToanShop,
+        where: {
+          trangThai: "DA_THANH_TOAN",
+          thoiGianKetThuc: {
+            [Op.gte]: new Date(), // Còn hạn
+          },
+        },
+        required: true, // ⭐ Bắt buộc có gói còn hạn
+        attributes: [],
+      },
+    ],
     order: [["tenCuaHang", "ASC"]],
   });
 

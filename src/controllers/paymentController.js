@@ -48,19 +48,40 @@ async function getPaymentConfirmations(req, res, next) {
   }
 }
 
+// Cập nhật confirmPayment
 async function confirmPayment(req, res, next) {
   try {
-    const payment = await paymentService.confirmPayment(req.params.id);
-    res.json({ message: "Payment confirmed", data: payment });
+    const payment = await paymentService.confirmPayment(
+      req.params.id,
+      req.user.id // Admin ID
+    );
+
+    res.json({
+      message: "Xác nhận thanh toán thành công! Shop đã được kích hoạt.",
+      data: payment,
+    });
   } catch (err) {
     next(err);
   }
 }
 
+// Cập nhật rejectPayment
 async function rejectPayment(req, res, next) {
   try {
-    const payment = await paymentService.rejectPayment(req.params.id);
-    res.json({ message: "Payment rejected", data: payment });
+    const { lyDoTuChoi } = req.body;
+
+    if (!lyDoTuChoi || !lyDoTuChoi.trim()) {
+      return res.status(400).json({
+        message: "Vui lòng nhập lý do từ chối",
+      });
+    }
+
+    const payment = await paymentService.rejectPayment(req.params.id, req.user.id, lyDoTuChoi);
+
+    res.json({
+      message: "Đã từ chối thanh toán",
+      data: payment,
+    });
   } catch (err) {
     next(err);
   }
@@ -90,6 +111,26 @@ async function purchasePackage(req, res, next) {
   }
 }
 
+// ==================== OWNER - UPLOAD BIÊN LAI ====================
+async function uploadPaymentProof(req, res, next) {
+  try {
+    const { paymentId, ghiChu } = req.body;
+
+    if (!req.file) {
+      return res.status(400).json({ message: "Vui lòng upload biên lai" });
+    }
+
+    const payment = await paymentService.uploadPaymentProof(req.user.id, paymentId, req.file, ghiChu);
+
+    res.json({
+      message: "Upload biên lai thành công! Chờ admin xác nhận.",
+      data: payment,
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
 module.exports = {
   getPaymentPackages,
   createPaymentPackage,
@@ -100,4 +141,5 @@ module.exports = {
   rejectPayment,
   getMyPayments,
   purchasePackage,
+  uploadPaymentProof,
 };

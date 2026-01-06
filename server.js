@@ -12,14 +12,8 @@ if (!fs.existsSync(uploadsDir)) {
 
 console.log("🚀 Starting server...");
 console.log("📝 Environment variables loaded");
-console.log(
-  "🔑 JWT_SECRET:",
-  process.env.JWT_SECRET ? "✅ Loaded" : "❌ Missing"
-);
-console.log(
-  "🗄️ DATABASE_URL:",
-  process.env.DATABASE_URL ? "✅ Loaded" : "❌ Missing"
-);
+console.log("🔑 JWT_SECRET:", process.env.JWT_SECRET ? "✅ Loaded" : "❌ Missing");
+console.log("🗄️ DATABASE_URL:", process.env.DATABASE_URL ? "✅ Loaded" : "❌ Missing");
 
 const app = require("./src/app");
 
@@ -29,3 +23,9 @@ app.listen(PORT, () => {
   console.log(`✅ Server running on http://localhost:${PORT}`);
   console.log(`📍 Test endpoint: http://localhost:${PORT}/api/auth/login`);
 });
+
+// ⭐ Khởi động cron jobs
+if (process.env.ENABLE_CRON_JOBS === "true") {
+  require("./src/jobs/checkExpiredShops");
+  console.log("✅ Cron jobs started");
+}
