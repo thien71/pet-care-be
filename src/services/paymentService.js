@@ -73,7 +73,8 @@ async function purchasePackage(userId, maGoi) {
     soTien: pkg.soTien,
     thoiGianBatDau,
     thoiGianKetThuc,
-    trangThai: "CHUA_THANH_TOAN",
+    trangThai: "CHO_XAC_NHAN",
+    // trangThai: "CHUA_THANH_TOAN",
     ngayTao: new Date(),
   });
 }

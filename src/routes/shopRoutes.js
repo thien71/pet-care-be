@@ -102,6 +102,7 @@ router.put("/:id/approve", verifyToken, checkRole(["QUAN_TRI_VIEN"]), shopContro
 router.put("/:id/reject", verifyToken, checkRole(["QUAN_TRI_VIEN"]), shopController.rejectShop);
 
 // ==================== OWNER ====================
+router.get("/my/status", verifyToken, checkRole(["CHU_CUA_HANG"]), shopController.getShopStatus);
 router.get("/my/info", verifyToken, checkRole(["CHU_CUA_HANG"]), shopController.getShopInfo);
 router.put("/my/info", verifyToken, checkRole(["CHU_CUA_HANG"]), uploadShopImage.single("anhCuaHang"), shopController.updateShopInfo);
 

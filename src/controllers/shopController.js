@@ -119,6 +119,15 @@ async function updateShopInfo(req, res, next) {
   }
 }
 
+async function getShopStatus(req, res, next) {
+  try {
+    const status = await shopService.getShopStatus(req.user.id);
+    res.json(status);
+  } catch (err) {
+    next(err);
+  }
+}
+
 // ==================== PUBLIC ====================
 async function getPublicShops(req, res, next) {
   try {
@@ -207,6 +216,7 @@ async function getShopCustomers(req, res, next) {
 
 module.exports = {
   registerShop,
+
   getShops,
   getShopApprovals,
   getShopById,
@@ -214,8 +224,11 @@ module.exports = {
   deleteShop,
   approveShop,
   rejectShop,
+
   getShopInfo,
   updateShopInfo,
+  getShopStatus,
+
   getPublicShops,
   getShopProfile,
   getTopShops,

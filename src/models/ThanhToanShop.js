@@ -10,12 +10,22 @@ const ThanhToanShop = sequelize.define(
       autoIncrement: true,
     },
     maCuaHang: { type: DataTypes.INTEGER, allowNull: false },
-    maGoi: { type: DataTypes.INTEGER, allowNull: false },
+    maGoi: {
+      type: DataTypes.INTEGER,
+      allowNull: true, // Cho phép null cho TRIAL period
+    },
     soTien: { type: DataTypes.DECIMAL(12, 2), allowNull: false },
     thoiGianBatDau: { type: DataTypes.DATEONLY, allowNull: false },
     thoiGianKetThuc: { type: DataTypes.DATEONLY, allowNull: false },
     trangThai: {
-      type: DataTypes.ENUM("CHUA_THANH_TOAN", "CHO_XAC_NHAN", "DA_THANH_TOAN", "TU_CHOI", "QUA_HAN"),
+      type: DataTypes.ENUM(
+        "TRIAL", // NEW: Grace period 7 ngày
+        "CHUA_THANH_TOAN",
+        "CHO_XAC_NHAN",
+        "DA_THANH_TOAN",
+        "TU_CHOI",
+        "QUA_HAN"
+      ),
       defaultValue: "CHUA_THANH_TOAN",
     },
     bienLaiThanhToan: {
