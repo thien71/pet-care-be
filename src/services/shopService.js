@@ -137,7 +137,7 @@ async function rejectShop(shopId) {
   return shop;
 }
 
-// ==================== OWNER - SHOP INFO ====================
+// ==================== OWNER ====================
 async function getShopInfo(userId) {
   const user = await NguoiDung.findByPk(userId);
   if (!user || !user.maCuaHang) {
@@ -152,7 +152,7 @@ async function getShopInfo(userId) {
   return shop;
 }
 
-async function updateShopInfo(userId, { tenCuaHang, diaChi, soDienThoai, moTa, kinhDo, viDo }) {
+async function updateShopInfo(userId, { tenCuaHang, diaChi, soDienThoai, moTa, kinhDo, viDo, anhCuaHang }) {
   const user = await NguoiDung.findByPk(userId);
   if (!user || !user.maCuaHang) {
     throw new Error("Shop not found");
@@ -163,7 +163,21 @@ async function updateShopInfo(userId, { tenCuaHang, diaChi, soDienThoai, moTa, k
     throw new Error("Shop not found");
   }
 
-  await shop.update({ tenCuaHang, diaChi, soDienThoai, moTa, kinhDo, viDo });
+  const updateData = {
+    tenCuaHang,
+    diaChi,
+    soDienThoai,
+    moTa,
+    kinhDo,
+    viDo,
+  };
+
+  // Nếu có upload ảnh mới
+  if (anhCuaHang) {
+    updateData.anhCuaHang = anhCuaHang;
+  }
+
+  await shop.update(updateData);
   return shop;
 }
 

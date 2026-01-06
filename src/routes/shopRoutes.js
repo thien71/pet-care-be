@@ -1,4 +1,4 @@
-// src/routes/shopRoutes.js
+// src/routes/shopRoutes.js - UPDATED
 const express = require("express");
 const router = express.Router();
 const multer = require("multer");
@@ -8,10 +8,16 @@ const { verifyToken, checkRole } = require("../middlewares/authMiddlewares");
 const shopController = require("../controllers/shopController");
 
 const uploadsDir = path.join(__dirname, "../../uploads");
+const shopsDir = path.join(__dirname, "../../uploads/shops");
+
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
+if (!fs.existsSync(shopsDir)) {
+  fs.mkdirSync(shopsDir, { recursive: true });
+}
 
+// ==================== MULTER CONFIG FOR SHOP REGISTRATION ====================
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, uploadsDir),
   filename: (req, file, cb) => {
@@ -35,6 +41,34 @@ const upload = multer({
       return cb(null, true);
     } else {
       cb(new Error("Only images (JPEG, PNG) and PDF files are allowed!"));
+    }
+  },
+});
+
+// ==================== MULTER CONFIG FOR SHOP IMAGE UPDATE ====================
+const shopImageStorage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, shopsDir),
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    const ext = path.extname(file.originalname);
+    const nameWithoutExt = path.basename(file.originalname, ext);
+    const safeName = nameWithoutExt.replace(/[^a-zA-Z0-9]/g, "_");
+    cb(null, "shop-" + safeName + "-" + uniqueSuffix + ext);
+  },
+});
+
+const uploadShopImage = multer({
+  storage: shopImageStorage,
+  limits: { fileSize: 5 * 1024 * 1024, files: 1 },
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = /jpeg|jpg|png|webp/;
+    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+    const mimetype = allowedTypes.test(file.mimetype);
+
+    if (mimetype && extname) {
+      return cb(null, true);
+    } else {
+      cb(new Error("Only image files (JPEG, PNG, WebP) are allowed!"));
     }
   },
 });
@@ -69,7 +103,7 @@ router.put("/:id/reject", verifyToken, checkRole(["QUAN_TRI_VIEN"]), shopControl
 
 // ==================== OWNER ====================
 router.get("/my/info", verifyToken, checkRole(["CHU_CUA_HANG"]), shopController.getShopInfo);
-router.put("/my/info", verifyToken, checkRole(["CHU_CUA_HANG"]), shopController.updateShopInfo);
+router.put("/my/info", verifyToken, checkRole(["CHU_CUA_HANG"]), uploadShopImage.single("anhCuaHang"), shopController.updateShopInfo);
 
 // ==================== STAFF ====================
 router.get("/my/customers", verifyToken, checkRole(["LE_TAN", "CHU_CUA_HANG"]), shopController.getShopCustomers);

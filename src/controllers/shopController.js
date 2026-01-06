@@ -93,7 +93,26 @@ async function getShopInfo(req, res, next) {
 
 async function updateShopInfo(req, res, next) {
   try {
-    const shop = await shopService.updateShopInfo(req.user.id, req.body);
+    const { tenCuaHang, diaChi, soDienThoai, moTa, kinhDo, viDo } = req.body;
+
+    // Lấy image path nếu có upload
+    const anhCuaHang = req.file ? `/uploads/shops/${req.file.filename}` : null;
+
+    const updateData = {
+      tenCuaHang,
+      diaChi,
+      soDienThoai,
+      moTa,
+      kinhDo,
+      viDo,
+    };
+
+    // Chỉ thêm anhCuaHang vào updateData nếu có upload mới
+    if (anhCuaHang) {
+      updateData.anhCuaHang = anhCuaHang;
+    }
+
+    const shop = await shopService.updateShopInfo(req.user.id, updateData);
     res.json({ message: "Shop updated", data: shop });
   } catch (err) {
     next(err);
