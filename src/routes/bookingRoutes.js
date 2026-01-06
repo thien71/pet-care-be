@@ -13,10 +13,10 @@ router.post("/", verifyToken, checkRole(["KHACH_HANG"]), bookingController.creat
 router.get("/my", verifyToken, checkRole(["KHACH_HANG"]), bookingController.getMyBookings);
 
 // ==================== STAFF/OWNER ====================
-router.get("/shop", verifyToken, checkRole(["CHU_CUA_HANG", "LE_TAN"]), checkShopActive, bookingController.getShopBookings);
-router.put("/:id/confirm", verifyToken, checkRole(["CHU_CUA_HANG", "LE_TAN"]), checkShopActive, bookingController.confirmBooking);
-router.put("/:id/assign", verifyToken, checkRole(["CHU_CUA_HANG", "LE_TAN"]), checkShopActive, bookingController.assignTechnician);
-router.put("/:id/status", verifyToken, checkRole(["CHU_CUA_HANG", "LE_TAN"]), checkShopActive, bookingController.updateBookingStatus);
+router.get("/shop", verifyToken, checkRole(["CHU_CUA_HANG", "LE_TAN"]), bookingController.getShopBookings);
+router.put("/:id/confirm", verifyToken, checkRole(["CHU_CUA_HANG", "LE_TAN"]), bookingController.confirmBooking);
+router.put("/:id/assign", verifyToken, checkRole(["CHU_CUA_HANG", "LE_TAN"]), bookingController.assignTechnician);
+router.put("/:id/status", verifyToken, checkRole(["CHU_CUA_HANG", "LE_TAN"]), bookingController.updateBookingStatus);
 
 // ==================== TECHNICIAN ====================
 router.get("/my-assignments", verifyToken, checkRole(["KY_THUAT_VIEN"]), bookingController.getMyAssignments);
