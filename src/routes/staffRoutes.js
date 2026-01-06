@@ -8,7 +8,7 @@ const staffController = require("../controllers/staffController");
 router.get("/schedule", verifyToken, checkRole(["LE_TAN", "KY_THUAT_VIEN"]), staffController.getMySchedule);
 
 // ==================== EMPLOYEE MANAGEMENT ====================
-router.get("/employees", verifyToken, checkRole(["CHU_CUA_HANG"]), staffController.getEmployees);
+router.get("/employees", verifyToken, checkRole(["CHU_CUA_HANG", "LE_TAN"]), staffController.getEmployees);
 router.post("/employees", verifyToken, checkRole(["CHU_CUA_HANG"]), staffController.addEmployee);
 router.delete("/employees/:id", verifyToken, checkRole(["CHU_CUA_HANG"]), staffController.deleteEmployee);
 router.put("/employees/:id/toggle-status", verifyToken, checkRole(["CHU_CUA_HANG"]), staffController.toggleEmployeeStatus);
