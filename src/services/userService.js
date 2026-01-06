@@ -158,13 +158,20 @@ async function getUserById(userId) {
   return user;
 }
 
-async function updateUser(userId, { hoTen, soDienThoai, diaChi, vaiTros }) {
+async function updateUser(userId, { hoTen, soDienThoai, diaChi, vaiTros, trangThai }) {
   const user = await NguoiDung.findByPk(userId);
   if (!user) {
     throw new Error("User not found");
   }
 
-  await user.update({ hoTen, soDienThoai, diaChi });
+  const updateData = {};
+
+  if (hoTen !== undefined) updateData.hoTen = hoTen;
+  if (soDienThoai !== undefined) updateData.soDienThoai = soDienThoai;
+  if (diaChi !== undefined) updateData.diaChi = diaChi;
+  if (trangThai !== undefined) updateData.trangThai = trangThai;
+
+  await user.update(updateData);
 
   if (vaiTros && Array.isArray(vaiTros)) {
     await NguoiDungVaiTro.destroy({

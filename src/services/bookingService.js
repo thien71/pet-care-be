@@ -327,7 +327,7 @@ async function getAvailableSlots(shopId, date) {
   });
 
   const timeSlots = [];
-  for (let hour = 8; hour <= 20; hour++) {
+  for (let hour = 7; hour <= 21; hour++) {
     const timeStr = `${hour.toString().padStart(2, "0")}:00`;
 
     let availableTechs = 0;

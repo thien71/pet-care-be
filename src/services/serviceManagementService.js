@@ -228,6 +228,20 @@ async function deleteSystemService(serviceId) {
   if (!service) {
     throw new Error("Service not found");
   }
+
+  // Kiểm tra xem có shop nào đang sử dụng dịch vụ này không
+  const shopsUsing = await DichVuCuaShop.count({
+    where: { maDichVuHeThong: serviceId },
+  });
+
+  if (shopsUsing > 0) {
+    throw new Error(
+      `Không thể xóa dịch vụ này vì có ${shopsUsing} cửa hàng đang sử dụng. ` +
+        `Vui lòng vô hiệu hóa thay vì xóa để bảo vệ dữ liệu các cửa hàng.`
+    );
+  }
+
+  // Chỉ xóa nếu chưa có shop nào sử dụng
   await service.destroy();
   return { message: "Service deleted" };
 }
