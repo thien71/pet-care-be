@@ -346,6 +346,19 @@ async function deleteShopService(userId, serviceId) {
 async function getAllShopServices({ limit = 20, offset = 0, search = "", sortBy = "relevance", petType = "" }) {
   const shopServices = await DichVuCuaShop.findAll({
     where: { trangThai: 1 },
+    attributes: [
+      "maDichVuShop",
+      "maDichVuHeThong",
+      "maCuaHang",
+      "gia",
+      "hinhAnh",
+      "moTaShop",
+      "thoiLuongShop",
+      "soLanDat",
+      "danhGiaTrungBinh",
+      "soLuotDanhGia",
+      "trangThai",
+    ],
     include: [
       {
         model: DichVuHeThong,
@@ -391,6 +404,8 @@ async function getAllShopServices({ limit = 20, offset = 0, search = "", sortBy 
     filtered.sort((a, b) => parseFloat(a.gia) - parseFloat(b.gia));
   } else if (!search && sortBy === "price_desc") {
     filtered.sort((a, b) => parseFloat(b.gia) - parseFloat(a.gia));
+  } else if (!search && sortBy === "rating") {
+    filtered.sort((a, b) => parseFloat(b.danhGiaTrungBinh || 0) - parseFloat(a.danhGiaTrungBinh || 0));
   }
 
   const total = filtered.length;
@@ -401,8 +416,12 @@ async function getAllShopServices({ limit = 20, offset = 0, search = "", sortBy 
     maDichVuHeThong: s.maDichVuHeThong,
     tenDichVu: s.DichVuHeThong?.tenDichVu,
     moTa: s.DichVuHeThong?.moTa,
-    thoiLuong: s.DichVuHeThong?.thoiLuong,
+    thoiLuong: s.thoiLuongShop || s.DichVuHeThong?.thoiLuong, // ⭐ Ưu tiên thoiLuongShop
     gia: s.gia,
+    hinhAnh: s.hinhAnh,
+    soLanDat: s.soLanDat || 0,
+    danhGiaTrungBinh: parseFloat(s.danhGiaTrungBinh || 0).toFixed(1),
+    soLuotDanhGia: s.soLuotDanhGia || 0,
     maCuaHang: s.CuaHang?.maCuaHang,
     tenCuaHang: s.CuaHang?.tenCuaHang,
     diaChi: s.CuaHang?.diaChi,
@@ -422,6 +441,19 @@ async function getAllShopServices({ limit = 20, offset = 0, search = "", sortBy 
 
 async function getShopServiceDetail(shopServiceId) {
   const shopService = await DichVuCuaShop.findByPk(shopServiceId, {
+    attributes: [
+      "maDichVuShop",
+      "maDichVuHeThong",
+      "maCuaHang",
+      "gia",
+      "hinhAnh",
+      "moTaShop",
+      "thoiLuongShop",
+      "soLanDat",
+      "danhGiaTrungBinh",
+      "soLuotDanhGia",
+      "trangThai",
+    ],
     include: [
       {
         model: DichVuHeThong,
@@ -444,13 +476,14 @@ async function getShopServiceDetail(shopServiceId) {
       maDichVuShop: { [Op.ne]: shopServiceId },
       trangThai: 1,
     },
+    attributes: ["maDichVuShop", "gia", "hinhAnh", "thoiLuongShop", "soLanDat", "danhGiaTrungBinh", "soLuotDanhGia"],
     include: [
       {
         model: DichVuHeThong,
         attributes: ["tenDichVu", "thoiLuong"],
       },
     ],
-    limit: 6,
+    limit: 8,
   });
 
   return {
@@ -458,8 +491,12 @@ async function getShopServiceDetail(shopServiceId) {
     maDichVuHeThong: shopService.maDichVuHeThong,
     tenDichVu: shopService.DichVuHeThong?.tenDichVu,
     moTa: shopService.DichVuHeThong?.moTa,
-    thoiLuong: shopService.DichVuHeThong?.thoiLuong,
+    thoiLuong: shopService.thoiLuongShop || shopService.DichVuHeThong?.thoiLuong, // Ưu tiên thoiLuongShop
     gia: shopService.gia,
+    hinhAnh: shopService.hinhAnh,
+    rating: parseFloat(shopService.danhGiaTrungBinh || 0).toFixed(1), // ⭐ Thêm rating
+    reviewCount: shopService.soLuotDanhGia || 0, // ⭐ Thêm reviewCount
+    bookingCount: shopService.soLanDat || 0, // ⭐ Thêm bookingCount
     shop: {
       maCuaHang: shopService.CuaHang?.maCuaHang,
       tenCuaHang: shopService.CuaHang?.tenCuaHang,
@@ -473,9 +510,14 @@ async function getShopServiceDetail(shopServiceId) {
     otherServices: otherServices.map((s) => ({
       maDichVuShop: s.maDichVuShop,
       tenDichVu: s.DichVuHeThong?.tenDichVu,
-      thoiLuong: s.DichVuHeThong?.thoiLuong,
+      thoiLuong: s.thoiLuongShop || s.DichVuHeThong?.thoiLuong, // ⭐ Ưu tiên thoiLuongShop
       gia: s.gia,
+      hinhAnh: s.hinhAnh,
+      soLanDat: s.soLanDat || 0,
+      danhGiaTrungBinh: parseFloat(s.danhGiaTrungBinh || 0).toFixed(1),
+      soLuotDanhGia: s.soLuotDanhGia || 0,
     })),
+    reviews: [], // TODO: Lấy từ bảng DanhGia nếu có
   };
 }
 
