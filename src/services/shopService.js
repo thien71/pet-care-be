@@ -213,7 +213,10 @@ async function getPublicShops() {
       {
         model: ThanhToanShop,
         where: {
-          trangThai: "DA_THANH_TOAN",
+          // trangThai: "DA_THANH_TOAN",
+          trangThai: {
+            [Op.in]: ["DA_THANH_TOAN", "TRIAL"],
+          },
           thoiGianKetThuc: {
             [Op.gte]: new Date(), // Còn hạn
           },
