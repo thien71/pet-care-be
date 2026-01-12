@@ -115,7 +115,7 @@ async function sendResetPasswordEmail(email, resetToken) {
             <p>Chúng tôi nhận được yêu cầu đặt lại mật khẩu cho tài khoản của bạn.</p>
             <p>Nhấn vào nút bên dưới để tạo mật khẩu mới:</p>
             <div style="text-align: center; color: #fff;">
-              <a href="${resetUrl}" class="button">ĐẶT LẠI MẬT KHẨU</a>
+              <a href="${resetUrl}" class="button" style="color:#fff;text-decoration:none;">ĐẶT LẠI MẬT KHẨU</a>
             </div>
             <p>Hoặc copy link sau vào trình duyệt:</p>
             <p style="word-break: break-all; background: #fff; padding: 10px; border-radius: 5px;">
