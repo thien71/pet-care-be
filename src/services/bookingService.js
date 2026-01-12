@@ -204,7 +204,7 @@ async function getMyAssignments(technicianId) {
     where: {
       maNhanVien: technicianId,
       trangThai: {
-        [Op.in]: ["DA_XAC_NHAN", "DANG_THUC_HIEN"],
+        [Op.in]: ["DA_XAC_NHAN", "DANG_THUC_HIEN", "HOAN_THANH"],
       },
     },
     include: [
