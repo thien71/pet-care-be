@@ -17,6 +17,7 @@ router.get("/shop", verifyToken, checkRole(["CHU_CUA_HANG", "LE_TAN"]), bookingC
 router.put("/:id/confirm", verifyToken, checkRole(["CHU_CUA_HANG", "LE_TAN"]), bookingController.confirmBooking);
 router.put("/:id/assign", verifyToken, checkRole(["CHU_CUA_HANG", "LE_TAN"]), bookingController.assignTechnician);
 router.put("/:id/status", verifyToken, checkRole(["CHU_CUA_HANG", "LE_TAN"]), bookingController.updateBookingStatus);
+router.put("/:id/confirm-payment", verifyToken, checkRole(["CHU_CUA_HANG", "LE_TAN"]), bookingController.confirmPayment);
 
 // ==================== TECHNICIAN ====================
 router.get("/my-assignments", verifyToken, checkRole(["KY_THUAT_VIEN"]), bookingController.getMyAssignments);

@@ -64,6 +64,18 @@ async function updateBookingStatus(req, res, next) {
   }
 }
 
+async function confirmPayment(req, res, next) {
+  try {
+    const booking = await bookingService.confirmPayment(req.user.id, req.params.id);
+    res.json({
+      message: "Xác nhận thanh toán thành công!",
+      data: booking,
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
 // ==================== TECHNICIAN ====================
 async function getMyAssignments(req, res, next) {
   try {
@@ -104,6 +116,7 @@ module.exports = {
   confirmBooking,
   assignTechnician,
   updateBookingStatus,
+  confirmPayment,
   getMyAssignments,
   updateMyAssignment,
   getAvailableSlots,

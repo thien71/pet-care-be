@@ -255,14 +255,41 @@ async function updateMyAssignment(technicianId, bookingId, trangThai) {
     throw new Error("Not your assignment");
   }
 
-  await booking.update({ trangThai });
-
   if (trangThai === "HOAN_THANH") {
     await booking.update({
-      trangThaiThanhToan: "DA_THANH_TOAN",
-      ngayThanhToan: new Date(),
+      trangThai: "HOAN_THANH",
+      trangThaiThanhToan: "CHUA_THANH_TOAN",
     });
+  } else {
+    await booking.update({ trangThai });
   }
+
+  return booking;
+}
+
+async function confirmPayment(userId, bookingId) {
+  const user = await NguoiDung.findByPk(userId);
+  if (!user || !user.maCuaHang) {
+    throw new Error("Shop not found");
+  }
+
+  const booking = await LichHen.findByPk(bookingId);
+  if (!booking) {
+    throw new Error("Booking not found");
+  }
+
+  if (booking.maCuaHang !== user.maCuaHang) {
+    throw new Error("Not your booking");
+  }
+
+  if (booking.trangThai !== "HOAN_THANH") {
+    throw new Error("Chỉ xác nhận thanh toán cho đơn đã hoàn thành");
+  }
+
+  await booking.update({
+    trangThaiThanhToan: "DA_THANH_TOAN",
+    ngayThanhToan: new Date(),
+  });
 
   return booking;
 }
@@ -384,5 +411,6 @@ module.exports = {
   updateBookingStatus,
   getMyAssignments,
   updateMyAssignment,
+  confirmPayment,
   getAvailableSlots,
 };
