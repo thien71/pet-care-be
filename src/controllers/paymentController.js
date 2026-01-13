@@ -100,7 +100,8 @@ async function getMyPayments(req, res, next) {
 async function purchasePackage(req, res, next) {
   try {
     const { maGoi } = req.body;
-    const payment = await paymentService.purchasePackage(req.user.id, maGoi);
+    const bienLai = req.file;
+    const payment = await paymentService.purchasePackage(req.user.id, { maGoi, bienLai });
 
     res.status(201).json({
       message: "Package registered successfully",
@@ -115,12 +116,13 @@ async function purchasePackage(req, res, next) {
 async function uploadPaymentProof(req, res, next) {
   try {
     const { paymentId, ghiChu } = req.body;
+    const bienLai = req.file;
 
-    if (!req.file) {
+    if (!bienLai) {
       return res.status(400).json({ message: "Vui lòng upload biên lai" });
     }
 
-    const payment = await paymentService.uploadPaymentProof(req.user.id, paymentId, req.file, ghiChu);
+    const payment = await paymentService.uploadPaymentProof(req.user.id, paymentId, bienLai, ghiChu);
 
     res.json({
       message: "Upload biên lai thành công! Chờ admin xác nhận.",

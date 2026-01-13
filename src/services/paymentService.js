@@ -52,7 +52,7 @@ async function getMyPayments(userId) {
   });
 }
 
-async function purchasePackage(userId, maGoi) {
+async function purchasePackage(userId, { maGoi, bienLai }) {
   const user = await NguoiDung.findByPk(userId);
   if (!user || !user.maCuaHang) {
     throw new Error("Shop not found");
@@ -67,16 +67,30 @@ async function purchasePackage(userId, maGoi) {
   const thoiGianKetThuc = new Date();
   thoiGianKetThuc.setMonth(thoiGianKetThuc.getMonth() + pkg.thoiGian);
 
-  return await ThanhToanShop.create({
+  const payment = await ThanhToanShop.create({
     maCuaHang: user.maCuaHang,
     maGoi,
     soTien: pkg.soTien,
     thoiGianBatDau,
     thoiGianKetThuc,
-    trangThai: "CHO_XAC_NHAN",
+    trangThai: bienLai ? "CHO_XAC_NHAN" : "CHUA_THANH_TOAN",
+    // trangThai: "CHO_XAC_NHAN",
     // trangThai: "CHUA_THANH_TOAN",
     ngayTao: new Date(),
+    bienLaiThanhToan: null,
   });
+
+  if (bienLai) {
+    const fileName = `${Date.now()}-${bienLai.originalname}`;
+    const filePath = path.join(__dirname, "../../uploads/payments", fileName);
+    await fs.promises.writeFile(filePath, bienLai.buffer); // Async để tránh block
+
+    payment.bienLaiThanhToan = `/uploads/payments/${fileName}`;
+    payment.trangThai = "CHO_XAC_NHAN";
+    await payment.save();
+  }
+
+  return payment;
 }
 
 // ==================== ADMIN - PAYMENT CONFIRMATIONS ====================
