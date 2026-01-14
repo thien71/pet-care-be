@@ -165,6 +165,12 @@ async function getShopProfile(req, res, next) {
       moTa: s.DichVuHeThong?.moTa,
       thoiLuong: s.DichVuHeThong?.thoiLuong,
       gia: s.gia,
+      hinhAnh: s.hinhAnh,
+      moTaShop: s.moTaShop,
+      thoiLuongShop: s.thoiLuongShop,
+      soLanDat: s.soLanDat,
+      danhGiaTrungBinh: s.danhGiaTrungBinh,
+      soLuotDanhGia: s.soLuotDanhGia,
     }));
 
     res.json({
