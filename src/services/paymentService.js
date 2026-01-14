@@ -3,6 +3,7 @@ const { GoiThanhToan, ThanhToanShop, CuaHang, NguoiDung } = require("../models")
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
+const emailService = require("./emailService");
 
 // ==================== PAYMENT PACKAGES ====================
 async function getAllPaymentPackages() {
@@ -145,7 +146,7 @@ async function uploadPaymentProof(userId, paymentId, file, note) {
 // ==================== ADMIN - XÁC NHẬN THANH TOÁN ====================
 async function confirmPayment(paymentId, adminId) {
   const payment = await ThanhToanShop.findByPk(paymentId, {
-    include: [{ model: CuaHang }],
+    include: [{ model: CuaHang }, { model: GoiThanhToan, attributes: ["tenGoi"] }],
   });
 
   if (!payment) {
@@ -175,8 +176,17 @@ async function confirmPayment(paymentId, adminId) {
   });
 
   if (ownerUser && ownerUser.email) {
-    // TODO: Gửi email xác nhận
-    console.log(`✉️ Send payment confirmation email to ${ownerUser.email}`);
+    try {
+      await emailService.sendPackagePaymentConfirmedEmail(
+        ownerUser.email,
+        ownerUser.hoTen,
+        payment.GoiThanhToan?.tenGoi || "Goi dich vu",
+        payment.thoiGianBatDau,
+        payment.thoiGianKetThuc
+      );
+    } catch (error) {
+      console.error("Error sending payment confirmation email:", error);
+    }
   }
 
   return payment;

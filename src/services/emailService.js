@@ -270,9 +270,371 @@ async function sendEmployeeSetupEmail(email, hoTen, setupToken) {
   }
 }
 
+/**
+ * Gửi email xác nhận đơn đặt dịch vụ (cửa hàng xác nhận)
+ */
+async function sendBookingConfirmedEmail(customerEmail, customerName, bookingId, shopName, bookingDate) {
+  const formattedDate = new Date(bookingDate).toLocaleDateString("vi-VN");
+
+  const mailOptions = {
+    from: `"Pet Care Da Nang" <${process.env.EMAIL_USER}>`,
+    to: customerEmail,
+    subject: "Đơn đã được xác nhận - Pet Care Da Nang",
+    html: `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 10px; }
+          .header { background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+          .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
+          .info-box { background: white; border-left: 4px solid #28a745; padding: 15px; margin: 20px 0; border-radius: 5px; }
+          .footer { text-align: center; margin-top: 30px; color: #777; font-size: 12px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>Xac Nhan Don Hang</h1>
+            <p>Tin vui nhan dung yeu!</p>
+          </div>
+          <div class="content">
+            <h2>Xin chao ${customerName},</h2>
+            <p>Cam on ban da tin tuong va lua chon dich vu cham soc thu cung cua chung toi!</p>
+            
+            <div class="info-box">
+              <strong>Trang thai: Xac nhan thành công</strong>
+              <p style="margin: 10px 0 0 0; color: #666;">
+                Dơn hang so <strong>${bookingId}</strong> cua ban da duoc xac nhan va dang cho phuong tien su ly.<br>
+                Cua hang: <strong>${shopName}</strong><br>
+                Ngay hen: <strong>${formattedDate}</strong>
+              </p>
+            </div>
+
+            <p style="color: #666; margin-top: 20px;">
+              Chúng tôi sẽ cập nhật trạng thái công việc qua email. Vui lòng kiểm tra email thường xuyên.
+            </p>
+
+            <p style="color: #666; font-size: 14px; margin-top: 20px;">
+              Nếu bạn cần hỗ trợ, vui lòng liên hệ: <strong>thien712k3@gmail.com</strong>
+            </p>
+          </div>
+          <div class="footer">
+            <p>&copy; 2024 Pet Care Da Nang - Nguyễn Văn Thanh Thiện</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `,
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    console.log("Booking confirmed email sent to:", customerEmail);
+  } catch (error) {
+    console.error("Error sending booking confirmed email:", error);
+  }
+}
+
+/**
+ * Gửi email dịch vụ đang được thực hiện (kỹ thuật viên bắt đầu làm)
+ */
+async function sendServiceStartedEmail(customerEmail, customerName, bookingId, shopName, technicianName) {
+  const mailOptions = {
+    from: `"Pet Care Da Nang" <${process.env.EMAIL_USER}>`,
+    to: customerEmail,
+    subject: "Dich vu dang duoc thuc hien - Pet Care Da Nang",
+    html: `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 10px; }
+          .header { background: linear-gradient(135deg, #0d6efd 0%, #0099ff 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+          .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
+          .info-box { background: white; border-left: 4px solid #0d6efd; padding: 15px; margin: 20px 0; border-radius: 5px; }
+          .footer { text-align: center; margin-top: 30px; color: #777; font-size: 12px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>Dich vu dang duoc xu ly</h1>
+          </div>
+          <div class="content">
+            <h2>Xin chao ${customerName},</h2>
+            <p>Chung tôi vui mừng thông báo rằng dịch vụ của bạn đang được thực hiện.</p>
+            
+            <div class="info-box">
+              <strong>Chi tiet:</strong>
+              <p style="margin: 10px 0 0 0; color: #666;">
+                Don hang so: <strong>${bookingId}</strong><br>
+                Cua hang: <strong>${shopName}</strong><br>
+                Ky thuat vien: <strong>${technicianName}</strong><br>
+                Trang thai: <strong>Đang thực hiện</strong>
+              </p>
+            </div>
+
+            <p style="color: #666; margin-top: 20px;">
+              Chúng tôi đang chăm sóc thú cưng của bạn với sự chu đáo. Dịch vụ sẽ được hoàn thành trong thời gian dự kiến.
+            </p>
+
+            <p style="color: #666; font-size: 14px; margin-top: 20px;">
+              Nếu bạn cần hỗ trợ, vui lòng liên hệ: <strong>thien712k3@gmail.com</strong>
+            </p>
+          </div>
+          <div class="footer">
+            <p>&copy; 2024 Pet Care Da Nang - Nguyễn Văn Thanh Thiện</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `,
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    console.log("Service started email sent to:", customerEmail);
+  } catch (error) {
+    console.error("Error sending service started email:", error);
+  }
+}
+
+/**
+ * Gửi email dịch vụ hoàn thành (kỹ thuật viên hoàn tất công việc)
+ */
+async function sendServiceCompletedEmail(customerEmail, customerName, bookingId, shopName) {
+  const mailOptions = {
+    from: `"Pet Care Da Nang" <${process.env.EMAIL_USER}>`,
+    to: customerEmail,
+    subject: "Dich vu da hoan thanh - Pet Care Da Nang",
+    html: `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 10px; }
+          .header { background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+          .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
+          .info-box { background: white; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0; border-radius: 5px; }
+          .action-box { background: #fffbea; border: 2px dashed #ffc107; border-radius: 10px; padding: 20px; text-align: center; margin: 20px 0; }
+          .footer { text-align: center; margin-top: 30px; color: #777; font-size: 12px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>Dich vu da hoan thanh</h1>
+          </div>
+          <div class="content">
+            <h2>Xin chao ${customerName},</h2>
+            <p>Tin tot! Dich vu cham soc thu cung cua ban da hoan thanh.</p>
+            
+            <div class="info-box">
+              <strong>Chi tiet:</strong>
+              <p style="margin: 10px 0 0 0; color: #666;">
+                Don hang so: <strong>${bookingId}</strong><br>
+                Cua hang: <strong>${shopName}</strong><br>
+                Trang thai: <strong>Đã hoàn thành</strong>
+              </p>
+            </div>
+
+            <div class="action-box">
+              <p style="margin: 0 0 10px 0; color: #333; font-size: 16px;"><strong>Buoc tiep theo:</strong></p>
+              <p style="margin: 5px 0; color: #666;">
+                Vui lòng đến nhận thú cưng của bạn.<br>
+                Thanh toán chi phí dịch vụ tại quầy.<br>
+              </p>
+            </div>
+
+            <p style="color: #666; margin-top: 20px;">
+              Cảm ơn bạn đã tin tưởng dịch vụ của chúng tôi. Hy vọng thú cưng của bạn sẽ khoẻ và vui vẻ!
+            </p>
+
+            <p style="color: #666; font-size: 14px; margin-top: 20px;">
+              Nếu bạn cần hỗ trợ, vui lòng liên hệ: <strong>thien712k3@gmail.com</strong>
+            </p>
+          </div>
+          <div class="footer">
+            <p>&copy; 2024 Pet Care Da Nang - Nguyễn Văn Thanh Thiện</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `,
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    console.log("Service completed email sent to:", customerEmail);
+  } catch (error) {
+    console.error("Error sending service completed email:", error);
+  }
+}
+
+/**
+ * Gửi email xác nhận hoàn tất đơn hàng (lễ tân xác nhận thanh toán)
+ */
+async function sendOrderCompletedEmail(customerEmail, customerName, bookingId, shopName, totalAmount) {
+  const formattedAmount = parseFloat(totalAmount).toLocaleString("vi-VN");
+
+  const mailOptions = {
+    from: `"Pet Care Da Nang" <${process.env.EMAIL_USER}>`,
+    to: customerEmail,
+    subject: "Don hang da hoan tat - Pet Care Da Nang",
+    html: `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 10px; }
+          .header { background: linear-gradient(135deg, #8e2800 0%, #c43a0e 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+          .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
+          .summary-box { background: white; border: 1px solid #ddd; border-radius: 5px; padding: 15px; margin: 20px 0; }
+          .amount { font-size: 24px; font-weight: bold; color: #8e2800; text-align: center; margin: 10px 0; }
+          .footer { text-align: center; margin-top: 30px; color: #777; font-size: 12px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>Don hang da hoan tat</h1>
+          </div>
+          <div class="content">
+            <h2>Xin chao ${customerName},</h2>
+            <p>Don hang cua ban da hoan tat thanh cong. Cam on ban da su dung dich vu cua chung toi!</p>
+            
+            <div class="summary-box">
+              <p style="margin: 0 0 10px 0; border-bottom: 1px solid #ddd; padding-bottom: 10px;">
+                <strong>Thong tin don hang:</strong>
+              </p>
+              <p style="margin: 5px 0; color: #666;">
+                Don hang so: <strong>${bookingId}</strong><br>
+                Cua hang: <strong>${shopName}</strong><br>
+                Trang thai: <strong>Đã thanh toán</strong>
+              </p>
+              
+              <div style="margin: 15px 0; padding: 15px; background: #f5f5f5; border-radius: 5px;">
+                <p style="margin: 0 0 5px 0; color: #666;">Tong chi phi:</p>
+                <div class="amount">${formattedAmount} VND</div>
+              </div>
+            </div>
+
+            <p style="color: #666; margin-top: 20px;">
+              Cảm ơn bạn đã tin tưởng dịch vụ chăm sóc thú cưng của Pet Care Da Nang. Chúng tôi luôn sẵn sàng phục vụ bạn trong những lần tiếp theo!
+            </p>
+
+            <p style="color: #666; font-size: 14px; margin-top: 20px;">
+              Nếu bạn cần hỗ trợ, vui lòng liên hệ: <strong>thien712k3@gmail.com</strong>
+            </p>
+          </div>
+          <div class="footer">
+            <p>&copy; 2024 Pet Care Da Nang - Nguyễn Văn Thanh Thiện</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `,
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    console.log("Order completed email sent to:", customerEmail);
+  } catch (error) {
+    console.error("Error sending order completed email:", error);
+  }
+}
+
+/**
+ * Gửi email xác nhận thanh toán gói dịch vụ (admin xác nhận thanh toán gói)
+ */
+async function sendPackagePaymentConfirmedEmail(ownerEmail, ownerName, packageName, validFrom, validUntil) {
+  const formattedFrom = new Date(validFrom).toLocaleDateString("vi-VN");
+  const formattedUntil = new Date(validUntil).toLocaleDateString("vi-VN");
+
+  const mailOptions = {
+    from: `"Pet Care Da Nang" <${process.env.EMAIL_USER}>`,
+    to: ownerEmail,
+    subject: "Thanh toan goi dich vu thành công - Pet Care Da Nang",
+    html: `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 10px; }
+          .header { background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+          .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
+          .success-box { background: white; border-left: 4px solid #28a745; padding: 15px; margin: 20px 0; border-radius: 5px; }
+          .validity-box { background: #e8f5e9; border: 1px solid #28a745; border-radius: 5px; padding: 15px; margin: 20px 0; }
+          .footer { text-align: center; margin-top: 30px; color: #777; font-size: 12px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>Thanh toan goi dich vu thành công</h1>
+          </div>
+          <div class="content">
+            <h2>Xin chao ${ownerName},</h2>
+            <p>Chúng tôi vui mừng thông báo rằng gói dịch vụ của cửa hàng bạn đã được xác nhận thanh toán thành công!</p>
+            
+            <div class="success-box">
+              <strong>Goi dich vu: ${packageName}</strong>
+              <p style="margin: 10px 0 0 0; color: #666;">
+                Trang thai: <strong>Đã thanh toán</strong><br>
+                Ngay xac nhan: <strong>${new Date().toLocaleDateString("vi-VN")}</strong>
+              </p>
+            </div>
+
+            <div class="validity-box">
+              <p style="margin: 0 0 10px 0; font-weight: bold; color: #2e7d32;">Thoi gian hieu luc:</p>
+              <p style="margin: 5px 0; color: #333;">
+                Từ: <strong>${formattedFrom}</strong><br>
+                Đến: <strong>${formattedUntil}</strong>
+              </p>
+              <p style="margin: 15px 0 0 0; font-size: 14px; color: #555;">
+                Gói dịch vụ của bạn hiện đã được kích hoạt và sẵn sàng sử dụng!
+              </p>
+            </div>
+
+            <p style="color: #666; margin-top: 20px;">
+              Với gói dịch vụ này, cửa hàng của bạn có thể tiếp tục cung cấp các dịch vụ chăm sóc thú cưng chất lượng cao cho khách hàng.
+            </p>
+
+            <p style="color: #666; font-size: 14px; margin-top: 20px;">
+              Nếu bạn cần hỗ trợ, vui lòng liên hệ: <strong>thien712k3@gmail.com</strong>
+            </p>
+          </div>
+          <div class="footer">
+            <p>&copy; 2024 Pet Care Da Nang - Nguyễn Văn Thanh Thiện</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `,
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    console.log("Package payment confirmed email sent to:", ownerEmail);
+  } catch (error) {
+    console.error("Error sending package payment confirmed email:", error);
+  }
+}
+
 module.exports = {
   sendVerificationOTP,
   sendResetPasswordEmail,
   sendPasswordChangedEmail,
   sendEmployeeSetupEmail,
+  sendBookingConfirmedEmail,
+  sendServiceStartedEmail,
+  sendServiceCompletedEmail,
+  sendOrderCompletedEmail,
+  sendPackagePaymentConfirmedEmail,
 };

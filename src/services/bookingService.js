@@ -13,6 +13,7 @@ const {
   CaLamViec,
 } = require("../models");
 const { Op } = require("sequelize");
+const emailService = require("./emailService");
 
 // ==================== CUSTOMER ====================
 async function createBooking(customerId, { maCuaHang, ngayHen, ghiChu, pets }) {
@@ -155,12 +156,41 @@ async function getShopBookings(userId, trangThai) {
 }
 
 async function confirmBooking(bookingId) {
-  const booking = await LichHen.findByPk(bookingId);
+  const booking = await LichHen.findByPk(bookingId, {
+    include: [
+      {
+        model: NguoiDung,
+        as: "KhachHang",
+        attributes: ["hoTen", "email"],
+      },
+      {
+        model: CuaHang,
+        attributes: ["tenCuaHang"],
+      },
+    ],
+  });
+
   if (!booking) {
     throw new Error("Booking not found");
   }
 
   await booking.update({ trangThai: "DA_XAC_NHAN" });
+
+  // Gửi email thông báo cho khách
+  if (booking.KhachHang && booking.KhachHang.email) {
+    try {
+      await emailService.sendBookingConfirmedEmail(
+        booking.KhachHang.email,
+        booking.KhachHang.hoTen,
+        booking.maLichHen,
+        booking.CuaHang?.tenCuaHang || "Pet Care",
+        booking.ngayHen
+      );
+    } catch (error) {
+      console.error("Error sending booking confirmed email:", error);
+    }
+  }
+
   return booking;
 }
 
@@ -246,7 +276,25 @@ async function getMyAssignments(technicianId) {
 }
 
 async function updateMyAssignment(technicianId, bookingId, trangThai) {
-  const booking = await LichHen.findByPk(bookingId);
+  const booking = await LichHen.findByPk(bookingId, {
+    include: [
+      {
+        model: NguoiDung,
+        as: "KhachHang",
+        attributes: ["hoTen", "email"],
+      },
+      {
+        model: NguoiDung,
+        as: "NhanVien",
+        attributes: ["hoTen"],
+      },
+      {
+        model: CuaHang,
+        attributes: ["tenCuaHang"],
+      },
+    ],
+  });
+
   if (!booking) {
     throw new Error("Booking not found");
   }
@@ -260,6 +308,37 @@ async function updateMyAssignment(technicianId, bookingId, trangThai) {
       trangThai: "HOAN_THANH",
       trangThaiThanhToan: "CHUA_THANH_TOAN",
     });
+
+    // Gửi email thông báo dịch vụ hoàn thành
+    if (booking.KhachHang && booking.KhachHang.email) {
+      try {
+        await emailService.sendServiceCompletedEmail(
+          booking.KhachHang.email,
+          booking.KhachHang.hoTen,
+          booking.maLichHen,
+          booking.CuaHang?.tenCuaHang || "Pet Care"
+        );
+      } catch (error) {
+        console.error("Error sending service completed email:", error);
+      }
+    }
+  } else if (trangThai === "DANG_THUC_HIEN") {
+    await booking.update({ trangThai });
+
+    // Gửi email thông báo dịch vụ đang thực hiện
+    if (booking.KhachHang && booking.KhachHang.email) {
+      try {
+        await emailService.sendServiceStartedEmail(
+          booking.KhachHang.email,
+          booking.KhachHang.hoTen,
+          booking.maLichHen,
+          booking.CuaHang?.tenCuaHang || "Pet Care",
+          booking.NhanVien?.hoTen || "Kỹ thuật viên"
+        );
+      } catch (error) {
+        console.error("Error sending service started email:", error);
+      }
+    }
   } else {
     await booking.update({ trangThai });
   }
@@ -273,7 +352,20 @@ async function confirmPayment(userId, bookingId) {
     throw new Error("Shop not found");
   }
 
-  const booking = await LichHen.findByPk(bookingId);
+  const booking = await LichHen.findByPk(bookingId, {
+    include: [
+      {
+        model: NguoiDung,
+        as: "KhachHang",
+        attributes: ["hoTen", "email"],
+      },
+      {
+        model: CuaHang,
+        attributes: ["tenCuaHang"],
+      },
+    ],
+  });
+
   if (!booking) {
     throw new Error("Booking not found");
   }
@@ -290,6 +382,21 @@ async function confirmPayment(userId, bookingId) {
     trangThaiThanhToan: "DA_THANH_TOAN",
     ngayThanhToan: new Date(),
   });
+
+  // Gửi email xác nhận hoàn tất đơn hàng
+  if (booking.KhachHang && booking.KhachHang.email) {
+    try {
+      await emailService.sendOrderCompletedEmail(
+        booking.KhachHang.email,
+        booking.KhachHang.hoTen,
+        booking.maLichHen,
+        booking.CuaHang?.tenCuaHang || "Pet Care",
+        booking.tongTien
+      );
+    } catch (error) {
+      console.error("Error sending order completed email:", error);
+    }
+  }
 
   return booking;
 }
