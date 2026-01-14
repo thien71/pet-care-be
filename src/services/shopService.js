@@ -1,6 +1,7 @@
 // src/services/shopService.js
 const { CuaHang, NguoiDung, VaiTro, NguoiDungVaiTro, ThanhToanShop } = require("../models");
 const { Op } = require("sequelize");
+const { sendShopLockedEmail, sendShopUnlockedEmail } = require("./emailService");
 
 // ==================== CUSTOMER - REGISTER SHOP ====================
 async function registerShop(userId, shopData, files) {
@@ -85,6 +86,25 @@ async function updateShop(shopId, { tenCuaHang, diaChi, soDienThoai, trangThai }
   const shop = await CuaHang.findByPk(shopId);
   if (!shop) {
     throw new Error("Shop not found");
+  }
+
+  // Lấy chủ cửa hàng
+  const owner = await NguoiDung.findOne({
+    where: { maCuaHang: shop.maCuaHang },
+  });
+
+  // Nếu cập nhật thành BI_KHOA (vô hiệu hoá) và trước đó không phải BI_KHOA, gửi email khóa
+  if (trangThai === "BI_KHOA" && shop.trangThai !== "BI_KHOA") {
+    if (owner && owner.email) {
+      await sendShopLockedEmail(owner.email, owner.hoTen, shop.tenCuaHang);
+    }
+  }
+
+  // Nếu cập nhật từ BI_KHOA thành HOAT_DONG (mở khóa), gửi email mở khóa
+  if (shop.trangThai === "BI_KHOA" && trangThai === "HOAT_DONG") {
+    if (owner && owner.email) {
+      await sendShopUnlockedEmail(owner.email, owner.hoTen, shop.tenCuaHang);
+    }
   }
 
   await shop.update({ tenCuaHang, diaChi, soDienThoai, trangThai });

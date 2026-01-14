@@ -166,7 +166,8 @@ async function confirmPayment(paymentId, adminId) {
 
   // ⭐ Kích hoạt lại shop
   const shop = await CuaHang.findByPk(payment.maCuaHang);
-  if (shop.trangThai === "BI_KHOA") {
+  const wasLocked = shop.trangThai === "BI_KHOA";
+  if (wasLocked) {
     await shop.update({ trangThai: "HOAT_DONG" });
   }
 
@@ -177,6 +178,12 @@ async function confirmPayment(paymentId, adminId) {
 
   if (ownerUser && ownerUser.email) {
     try {
+      // Nếu shop vừa được mở khóa, gửi email mở khóa
+      if (wasLocked) {
+        await emailService.sendShopUnlockedEmail(ownerUser.email, ownerUser.hoTen, shop.tenCuaHang);
+      }
+
+      // Gửi email xác nhận thanh toán gói dịch vụ
       await emailService.sendPackagePaymentConfirmedEmail(
         ownerUser.email,
         ownerUser.hoTen,
@@ -185,7 +192,7 @@ async function confirmPayment(paymentId, adminId) {
         payment.thoiGianKetThuc
       );
     } catch (error) {
-      console.error("Error sending payment confirmation email:", error);
+      console.error("Error sending payment confirmation emails:", error);
     }
   }
 

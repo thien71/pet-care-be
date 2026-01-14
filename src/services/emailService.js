@@ -637,6 +637,159 @@ async function sendPackagePaymentConfirmedEmail(ownerEmail, ownerName, packageNa
   }
 }
 
+/**
+ * Gửi email thông báo shop bị khóa do hết hạn thanh toán
+ */
+async function sendShopLockedEmail(ownerEmail, ownerName, shopName) {
+  const mailOptions = {
+    from: `"Pet Care Đà Nẵng" <${process.env.EMAIL_USER}>`,
+    to: ownerEmail,
+    subject: "Cửa hàng của bạn đã bị tạm khóa - Pet Care Đà Nẵng",
+    html: `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 10px; }
+          .header { background: linear-gradient(135deg, #dc3545 0%, #c82333 100%); color: white; padding: 20px 30px; text-align: center; border-radius: 10px 10px 0 0; }
+          .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
+          .warning-box { background: #fff3cd; border-left: 4px solid #dc3545; padding: 15px; margin: 20px 0; border-radius: 5px; }
+          .warning-box p { font-size: 15px; margin: 8px 0; }
+          .action-box { background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 5px; padding: 15px; margin: 20px 0; }
+          .action-box p { font-size: 15px; margin: 8px 0; }
+          .footer { text-align: center; margin-top: 30px; color: #777; font-size: 12px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1 style="margin: 0; font-size: 28px;">Cửa hàng bị tạm khóa</h1>
+          </div>
+          <div class="content">
+            <h2>Xin chào ${ownerName},</h2>
+            <p>Chúng tôi phải thông báo rằng cửa hàng của bạn đã bị tạm khóa do hết hạn thanh toán gói dịch vụ.</p>
+            
+            <div class="warning-box">
+              <strong style="color: #dc3545; font-size: 16px;">Thông tin cửa hàng:</strong>
+              <p style="margin: 12px 0 0 0; color: #333;">
+                <strong>Tên cửa hàng:</strong> ${shopName}<br>
+                <strong>Trạng thái:</strong> Tạm khóa<br>
+                <strong>Lý do:</strong> Hết hạn thanh toán gói dịch vụ
+              </p>
+            </div>
+
+            <div class="action-box">
+              <p style="margin: 0 0 10px 0; font-weight: bold; color: #333; font-size: 16px;">Để mở khóa cửa hàng, vui lòng:</p>
+              <p style="margin: 8px 0; color: #666;">
+                1. Đăng nhập vào tài khoản quản lý cửa hàng của bạn<br>
+                2. Thanh toán lại gói dịch vụ và nộp biên lai<br>
+                3. Chờ Admin xác nhận trong vòng 24 giờ<br>
+                4. Cửa hàng sẽ được mở khóa tự động sau khi xác nhận
+              </p>
+            </div>
+
+            <p style="color: #666; margin-top: 20px;">
+              Nếu bạn có bất kỳ câu hỏi hoặc cần hỗ trợ, vui lòng liên hệ với chúng tôi ngay.
+            </p>
+
+            <p style="color: #666; font-size: 14px; margin-top: 20px;">
+              Liên hệ hỗ trợ: <strong>thien712k3@gmail.com</strong>
+            </p>
+          </div>
+          <div class="footer">
+            <p>&copy; PetCare Đà Nẵng</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `,
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    console.log("Shop locked notification email sent to:", ownerEmail);
+  } catch (error) {
+    console.error("Error sending shop locked email:", error);
+  }
+}
+
+/**
+ * Gửi email thông báo shop được mở khóa
+ */
+async function sendShopUnlockedEmail(ownerEmail, ownerName, shopName) {
+  const mailOptions = {
+    from: `"Pet Care Đà Nẵng" <${process.env.EMAIL_USER}>`,
+    to: ownerEmail,
+    subject: "Cửa hàng của bạn đã được mở khóa - Pet Care Đà Nẵng",
+    html: `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 10px; }
+          .header { background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; padding: 20px 30px; text-align: center; border-radius: 10px 10px 0 0; }
+          .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
+          .success-box { background: white; border-left: 4px solid #28a745; padding: 15px; margin: 20px 0; border-radius: 5px; }
+          .success-box p { font-size: 15px; margin: 8px 0; }
+          .action-box { background: #e8f5e9; border: 1px solid #28a745; border-radius: 5px; padding: 15px; margin: 20px 0; }
+          .footer { text-align: center; margin-top: 30px; color: #777; font-size: 12px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1 style="margin: 0; font-size: 28px;">Cửa hàng đã được mở khóa</h1>
+          </div>
+          <div class="content">
+            <h2>Xin chào ${ownerName},</h2>
+            <p>Cửa hàng của bạn đã được kích hoạt trở lại và sẵn sàng hoạt động!</p>
+            
+            <div class="success-box">
+              <strong style="color: #28a745; font-size: 16px;">Thông tin cửa hàng:</strong>
+              <p style="margin: 12px 0 0 0; color: #333;">
+                <strong>Tên cửa hàng:</strong> ${shopName}<br>
+                <strong>Trạng thái:</strong> Hoạt động<br>
+                <strong>Ngày kích hoạt:</strong> ${new Date().toLocaleDateString("vi-VN")}
+              </p>
+            </div>
+
+            <div class="action-box">
+              <p style="margin: 0; color: #333; font-size: 16px;"><strong>Bạn có thể:</strong></p>
+              <p style="margin: 8px 0; color: #666;">
+                - Đăng nhập vào tài khoản quản lý cửa hàng<br>
+                - Cập nhật thông tin dịch vụ<br>
+                - Quản lý đơn đặt hàng và khách hàng<br>
+                - Xem báo cáo doanh thu
+              </p>
+            </div>
+
+            <p style="color: #666; margin-top: 20px;">
+              Cảm ơn bạn đã thanh toán gói dịch vụ. Chúng tôi sẽ tiếp tục hỗ trợ cửa hàng của bạn để phát triển kinh doanh.
+            </p>
+
+            <p style="color: #666; font-size: 14px; margin-top: 20px;">
+              Nếu bạn có bất kỳ câu hỏi, vui lòng liên hệ: <strong>thien712k3@gmail.com</strong>
+            </p>
+          </div>
+          <div class="footer">
+            <p>&copy; PetCare Đà Nẵng</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `,
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    console.log("Shop unlocked notification email sent to:", ownerEmail);
+  } catch (error) {
+    console.error("Error sending shop unlocked email:", error);
+  }
+}
+
 module.exports = {
   sendVerificationOTP,
   sendResetPasswordEmail,
@@ -647,4 +800,6 @@ module.exports = {
   sendServiceCompletedEmail,
   sendOrderCompletedEmail,
   sendPackagePaymentConfirmedEmail,
+  sendShopLockedEmail,
+  sendShopUnlockedEmail,
 };
