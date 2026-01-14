@@ -274,12 +274,18 @@ async function sendEmployeeSetupEmail(email, hoTen, setupToken) {
  * Gửi email xác nhận đơn đặt dịch vụ (cửa hàng xác nhận)
  */
 async function sendBookingConfirmedEmail(customerEmail, customerName, bookingId, shopName, bookingDate) {
-  const formattedDate = new Date(bookingDate).toLocaleDateString("vi-VN");
+  const formattedDate = new Date(bookingDate).toLocaleDateString("vi-VN", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 
   const mailOptions = {
-    from: `"Pet Care Da Nang" <${process.env.EMAIL_USER}>`,
+    from: `"Pet Care Đà Nẵng" <${process.env.EMAIL_USER}>`,
     to: customerEmail,
-    subject: "Đơn đã được xác nhận - Pet Care Da Nang",
+    subject: "Đơn đã được xác nhận - Pet Care Đà Nẵng",
     html: `
       <!DOCTYPE html>
       <html>
@@ -287,28 +293,28 @@ async function sendBookingConfirmedEmail(customerEmail, customerName, bookingId,
         <style>
           body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
           .container { max-width: 600px; margin: 0 auto; padding: 10px; }
-          .header { background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+          .header { background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; padding: 20px 30px; text-align: center; border-radius: 10px 10px 0 0; }
           .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
           .info-box { background: white; border-left: 4px solid #28a745; padding: 15px; margin: 20px 0; border-radius: 5px; }
+          .info-box p { font-size: 15px; margin: 8px 0; }
           .footer { text-align: center; margin-top: 30px; color: #777; font-size: 12px; }
         </style>
       </head>
       <body>
         <div class="container">
           <div class="header">
-            <h1>Xac Nhan Don Hang</h1>
-            <p>Tin vui nhan dung yeu!</p>
+            <h1 style="margin: 0; font-size: 28px;">Đơn hàng đã được xác nhận</h1>
           </div>
           <div class="content">
-            <h2>Xin chao ${customerName},</h2>
-            <p>Cam on ban da tin tuong va lua chon dich vu cham soc thu cung cua chung toi!</p>
+            <h2>Xin chào ${customerName},</h2>
+            <p>Cảm ơn bạn đã tin tưởng và lựa chọn dịch vụ chăm sóc thú cưng của chúng tôi!</p>
             
             <div class="info-box">
-              <strong>Trang thai: Xac nhan thành công</strong>
-              <p style="margin: 10px 0 0 0; color: #666;">
-                Dơn hang so <strong>${bookingId}</strong> cua ban da duoc xac nhan va dang cho phuong tien su ly.<br>
-                Cua hang: <strong>${shopName}</strong><br>
-                Ngay hen: <strong>${formattedDate}</strong>
+              <strong style="color: #28a745; font-size: 16px;">Trạng thái: Xác nhận thành công</strong>
+              <p style="margin: 12px 0 0 0; color: #333;">
+                <strong>Đơn hàng số:</strong> ${bookingId}<br>
+                <strong>Cửa hàng:</strong> ${shopName}<br>
+                <strong>Ngày hẹn:</strong> ${formattedDate}
               </p>
             </div>
 
@@ -321,7 +327,7 @@ async function sendBookingConfirmedEmail(customerEmail, customerName, bookingId,
             </p>
           </div>
           <div class="footer">
-            <p>&copy; 2024 Pet Care Da Nang - Nguyễn Văn Thanh Thiện</p>
+            <p>&copy; PetCare Đà Nẵng</p>
           </div>
         </div>
       </body>
@@ -342,9 +348,9 @@ async function sendBookingConfirmedEmail(customerEmail, customerName, bookingId,
  */
 async function sendServiceStartedEmail(customerEmail, customerName, bookingId, shopName, technicianName) {
   const mailOptions = {
-    from: `"Pet Care Da Nang" <${process.env.EMAIL_USER}>`,
+    from: `"Pet Care Đà Nẵng" <${process.env.EMAIL_USER}>`,
     to: customerEmail,
-    subject: "Dich vu dang duoc thuc hien - Pet Care Da Nang",
+    subject: "Dịch vụ đang được thực hiện - Pet Care Đà Nẵng",
     html: `
       <!DOCTYPE html>
       <html>
@@ -352,28 +358,29 @@ async function sendServiceStartedEmail(customerEmail, customerName, bookingId, s
         <style>
           body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
           .container { max-width: 600px; margin: 0 auto; padding: 10px; }
-          .header { background: linear-gradient(135deg, #0d6efd 0%, #0099ff 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+          .header { background: linear-gradient(135deg, #0d6efd 0%, #0099ff 100%); color: white; padding: 20px 30px; text-align: center; border-radius: 10px 10px 0 0; }
           .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
           .info-box { background: white; border-left: 4px solid #0d6efd; padding: 15px; margin: 20px 0; border-radius: 5px; }
+          .info-box p { font-size: 15px; margin: 8px 0; }
           .footer { text-align: center; margin-top: 30px; color: #777; font-size: 12px; }
         </style>
       </head>
       <body>
         <div class="container">
           <div class="header">
-            <h1>Dich vu dang duoc xu ly</h1>
+            <h1 style="margin: 0; font-size: 28px;">Dịch vụ đang được thực hiện</h1>
           </div>
           <div class="content">
-            <h2>Xin chao ${customerName},</h2>
-            <p>Chung tôi vui mừng thông báo rằng dịch vụ của bạn đang được thực hiện.</p>
+            <h2>Xin chào ${customerName},</h2>
+            <p>Chúng tôi vui mừng thông báo rằng dịch vụ của bạn đang được thực hiện.</p>
             
             <div class="info-box">
-              <strong>Chi tiet:</strong>
-              <p style="margin: 10px 0 0 0; color: #666;">
-                Don hang so: <strong>${bookingId}</strong><br>
-                Cua hang: <strong>${shopName}</strong><br>
-                Ky thuat vien: <strong>${technicianName}</strong><br>
-                Trang thai: <strong>Đang thực hiện</strong>
+              <strong style="color: #0d6efd; font-size: 16px;">Chi tiết:</strong>
+              <p style="margin: 12px 0 0 0; color: #333;">
+                <strong>Đơn hàng số:</strong> ${bookingId}<br>
+                <strong>Cửa hàng:</strong> ${shopName}<br>
+                <strong>Kỹ thuật viên:</strong> ${technicianName}<br>
+                <strong>Trạng thái:</strong> Đang thực hiện
               </p>
             </div>
 
@@ -386,7 +393,7 @@ async function sendServiceStartedEmail(customerEmail, customerName, bookingId, s
             </p>
           </div>
           <div class="footer">
-            <p>&copy; 2024 Pet Care Da Nang - Nguyễn Văn Thanh Thiện</p>
+            <p>&copy; PetCare Đà Nẵng</p>
           </div>
         </div>
       </body>
@@ -407,9 +414,9 @@ async function sendServiceStartedEmail(customerEmail, customerName, bookingId, s
  */
 async function sendServiceCompletedEmail(customerEmail, customerName, bookingId, shopName) {
   const mailOptions = {
-    from: `"Pet Care Da Nang" <${process.env.EMAIL_USER}>`,
+    from: `"Pet Care Đà Nẵng" <${process.env.EMAIL_USER}>`,
     to: customerEmail,
-    subject: "Dich vu da hoan thanh - Pet Care Da Nang",
+    subject: "Dịch vụ đã hoàn thành - Pet Care Đà Nẵng",
     html: `
       <!DOCTYPE html>
       <html>
@@ -417,9 +424,10 @@ async function sendServiceCompletedEmail(customerEmail, customerName, bookingId,
         <style>
           body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
           .container { max-width: 600px; margin: 0 auto; padding: 10px; }
-          .header { background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+          .header { background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%); color: white; padding: 20px 30px; text-align: center; border-radius: 10px 10px 0 0; }
           .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
           .info-box { background: white; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0; border-radius: 5px; }
+          .info-box p { font-size: 15px; margin: 8px 0; }
           .action-box { background: #fffbea; border: 2px dashed #ffc107; border-radius: 10px; padding: 20px; text-align: center; margin: 20px 0; }
           .footer { text-align: center; margin-top: 30px; color: #777; font-size: 12px; }
         </style>
@@ -427,31 +435,30 @@ async function sendServiceCompletedEmail(customerEmail, customerName, bookingId,
       <body>
         <div class="container">
           <div class="header">
-            <h1>Dich vu da hoan thanh</h1>
+            <h1 style="margin: 0; font-size: 28px;">Dịch vụ đã hoàn thành</h1>
           </div>
           <div class="content">
-            <h2>Xin chao ${customerName},</h2>
-            <p>Tin tot! Dich vu cham soc thu cung cua ban da hoan thanh.</p>
+            <h2>Xin chào ${customerName},</h2>
             
             <div class="info-box">
-              <strong>Chi tiet:</strong>
-              <p style="margin: 10px 0 0 0; color: #666;">
-                Don hang so: <strong>${bookingId}</strong><br>
-                Cua hang: <strong>${shopName}</strong><br>
-                Trang thai: <strong>Đã hoàn thành</strong>
+              <strong style="color: #ffc107; font-size: 16px;">Chi tiết:</strong>
+              <p style="margin: 12px 0 0 0; color: #333;">
+                <strong>Đơn hàng số:</strong> ${bookingId}<br>
+                <strong>Cửa hàng:</strong> ${shopName}<br>
+                <strong>Trạng thái:</strong> Đã hoàn thành
               </p>
             </div>
 
             <div class="action-box">
-              <p style="margin: 0 0 10px 0; color: #333; font-size: 16px;"><strong>Buoc tiep theo:</strong></p>
+              <p style="margin: 0 0 10px 0; color: #333; font-size: 16px;"><strong>Bước tiếp theo:</strong></p>
               <p style="margin: 5px 0; color: #666;">
                 Vui lòng đến nhận thú cưng của bạn.<br>
-                Thanh toán chi phí dịch vụ tại quầy.<br>
+                Thanh toán chi phí dịch vụ tại quầy.
               </p>
             </div>
 
             <p style="color: #666; margin-top: 20px;">
-              Cảm ơn bạn đã tin tưởng dịch vụ của chúng tôi. Hy vọng thú cưng của bạn sẽ khoẻ và vui vẻ!
+              Cảm ơn bạn đã tin tưởng dịch vụ của chúng tôi. Hy vọng thú cưng của bạn sẽ khỏe và vui vẻ!
             </p>
 
             <p style="color: #666; font-size: 14px; margin-top: 20px;">
@@ -459,7 +466,7 @@ async function sendServiceCompletedEmail(customerEmail, customerName, bookingId,
             </p>
           </div>
           <div class="footer">
-            <p>&copy; 2024 Pet Care Da Nang - Nguyễn Văn Thanh Thiện</p>
+            <p>&copy; PetCare Đà Nẵng</p>
           </div>
         </div>
       </body>
@@ -482,9 +489,9 @@ async function sendOrderCompletedEmail(customerEmail, customerName, bookingId, s
   const formattedAmount = parseFloat(totalAmount).toLocaleString("vi-VN");
 
   const mailOptions = {
-    from: `"Pet Care Da Nang" <${process.env.EMAIL_USER}>`,
+    from: `"Pet Care Đà Nẵng" <${process.env.EMAIL_USER}>`,
     to: customerEmail,
-    subject: "Don hang da hoan tat - Pet Care Da Nang",
+    subject: "Đơn hàng đã hoàn tất - Pet Care Đà Nẵng",
     html: `
       <!DOCTYPE html>
       <html>
@@ -492,9 +499,10 @@ async function sendOrderCompletedEmail(customerEmail, customerName, bookingId, s
         <style>
           body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
           .container { max-width: 600px; margin: 0 auto; padding: 10px; }
-          .header { background: linear-gradient(135deg, #8e2800 0%, #c43a0e 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+          .header { background: linear-gradient(135deg, #8e2800 0%, #c43a0e 100%); color: white; padding: 20px 30px; text-align: center; border-radius: 10px 10px 0 0; }
           .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
           .summary-box { background: white; border: 1px solid #ddd; border-radius: 5px; padding: 15px; margin: 20px 0; }
+          .summary-box p { font-size: 15px; margin: 8px 0; }
           .amount { font-size: 24px; font-weight: bold; color: #8e2800; text-align: center; margin: 10px 0; }
           .footer { text-align: center; margin-top: 30px; color: #777; font-size: 12px; }
         </style>
@@ -502,30 +510,30 @@ async function sendOrderCompletedEmail(customerEmail, customerName, bookingId, s
       <body>
         <div class="container">
           <div class="header">
-            <h1>Don hang da hoan tat</h1>
+            <h1 style="margin: 0; font-size: 28px;">Đơn hàng đã hoàn tất</h1>
           </div>
           <div class="content">
-            <h2>Xin chao ${customerName},</h2>
-            <p>Don hang cua ban da hoan tat thanh cong. Cam on ban da su dung dich vu cua chung toi!</p>
+            <h2>Xin chào ${customerName},</h2>
+            <p>Đơn hàng của bạn đã hoàn tất thành công. Cảm ơn bạn đã sử dụng dịch vụ của chúng tôi!</p>
             
             <div class="summary-box">
               <p style="margin: 0 0 10px 0; border-bottom: 1px solid #ddd; padding-bottom: 10px;">
-                <strong>Thong tin don hang:</strong>
+                <strong style="color: #8e2800;">Thông tin đơn hàng:</strong>
               </p>
-              <p style="margin: 5px 0; color: #666;">
-                Don hang so: <strong>${bookingId}</strong><br>
-                Cua hang: <strong>${shopName}</strong><br>
-                Trang thai: <strong>Đã thanh toán</strong>
+              <p style="margin: 10px 0; color: #333;">
+                <strong>Đơn hàng số:</strong> ${bookingId}<br>
+                <strong>Cửa hàng:</strong> ${shopName}<br>
+                <strong>Trạng thái:</strong> Đã thanh toán
               </p>
               
               <div style="margin: 15px 0; padding: 15px; background: #f5f5f5; border-radius: 5px;">
-                <p style="margin: 0 0 5px 0; color: #666;">Tong chi phi:</p>
+                <p style="margin: 0 0 5px 0; color: #666;">Tổng chi phí:</p>
                 <div class="amount">${formattedAmount} VND</div>
               </div>
             </div>
 
             <p style="color: #666; margin-top: 20px;">
-              Cảm ơn bạn đã tin tưởng dịch vụ chăm sóc thú cưng của Pet Care Da Nang. Chúng tôi luôn sẵn sàng phục vụ bạn trong những lần tiếp theo!
+              Cảm ơn bạn đã tin tưởng dịch vụ chăm sóc thú cưng của PetCare Đà Nẵng. Chúng tôi luôn sẵn sàng phục vụ bạn trong những lần tiếp theo!
             </p>
 
             <p style="color: #666; font-size: 14px; margin-top: 20px;">
@@ -533,7 +541,7 @@ async function sendOrderCompletedEmail(customerEmail, customerName, bookingId, s
             </p>
           </div>
           <div class="footer">
-            <p>&copy; 2024 Pet Care Da Nang - Nguyễn Văn Thanh Thiện</p>
+            <p>&copy; PetCare Đà Nẵng</p>
           </div>
         </div>
       </body>
@@ -557,9 +565,9 @@ async function sendPackagePaymentConfirmedEmail(ownerEmail, ownerName, packageNa
   const formattedUntil = new Date(validUntil).toLocaleDateString("vi-VN");
 
   const mailOptions = {
-    from: `"Pet Care Da Nang" <${process.env.EMAIL_USER}>`,
+    from: `"Pet Care Đà Nẵng" <${process.env.EMAIL_USER}>`,
     to: ownerEmail,
-    subject: "Thanh toan goi dich vu thành công - Pet Care Da Nang",
+    subject: "Thanh toán gói dịch vụ thành công - Pet Care Đà Nẵng",
     html: `
       <!DOCTYPE html>
       <html>
@@ -567,35 +575,37 @@ async function sendPackagePaymentConfirmedEmail(ownerEmail, ownerName, packageNa
         <style>
           body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
           .container { max-width: 600px; margin: 0 auto; padding: 10px; }
-          .header { background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+          .header { background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; padding: 20px 30px; text-align: center; border-radius: 10px 10px 0 0; }
           .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
           .success-box { background: white; border-left: 4px solid #28a745; padding: 15px; margin: 20px 0; border-radius: 5px; }
+          .success-box p { font-size: 15px; margin: 8px 0; }
           .validity-box { background: #e8f5e9; border: 1px solid #28a745; border-radius: 5px; padding: 15px; margin: 20px 0; }
+          .validity-box p { font-size: 15px; margin: 8px 0; }
           .footer { text-align: center; margin-top: 30px; color: #777; font-size: 12px; }
         </style>
       </head>
       <body>
         <div class="container">
           <div class="header">
-            <h1>Thanh toan goi dich vu thành công</h1>
+            <h1 style="margin: 0; font-size: 28px;">Thanh toán gói dịch vụ thành công</h1>
           </div>
           <div class="content">
-            <h2>Xin chao ${ownerName},</h2>
+            <h2>Xin chào ${ownerName},</h2>
             <p>Chúng tôi vui mừng thông báo rằng gói dịch vụ của cửa hàng bạn đã được xác nhận thanh toán thành công!</p>
             
             <div class="success-box">
-              <strong>Goi dich vu: ${packageName}</strong>
-              <p style="margin: 10px 0 0 0; color: #666;">
-                Trang thai: <strong>Đã thanh toán</strong><br>
-                Ngay xac nhan: <strong>${new Date().toLocaleDateString("vi-VN")}</strong>
+              <strong style="color: #28a745; font-size: 16px;">Gói dịch vụ: ${packageName}</strong>
+              <p style="margin: 12px 0 0 0; color: #333;">
+                <strong>Trạng thái:</strong> Đã thanh toán<br>
+                <strong>Ngày xác nhận:</strong> ${new Date().toLocaleDateString("vi-VN")}
               </p>
             </div>
 
             <div class="validity-box">
-              <p style="margin: 0 0 10px 0; font-weight: bold; color: #2e7d32;">Thoi gian hieu luc:</p>
-              <p style="margin: 5px 0; color: #333;">
-                Từ: <strong>${formattedFrom}</strong><br>
-                Đến: <strong>${formattedUntil}</strong>
+              <p style="margin: 0 0 10px 0; font-weight: bold; color: #2e7d32; font-size: 16px;">Thời gian hiệu lực:</p>
+              <p style="margin: 10px 0; color: #333;">
+                <strong>Từ:</strong> ${formattedFrom}<br>
+                <strong>Đến:</strong> ${formattedUntil}
               </p>
               <p style="margin: 15px 0 0 0; font-size: 14px; color: #555;">
                 Gói dịch vụ của bạn hiện đã được kích hoạt và sẵn sàng sử dụng!
@@ -611,7 +621,7 @@ async function sendPackagePaymentConfirmedEmail(ownerEmail, ownerName, packageNa
             </p>
           </div>
           <div class="footer">
-            <p>&copy; 2024 Pet Care Da Nang - Nguyễn Văn Thanh Thiện</p>
+            <p>&copy; PetCare Đà Nẵng</p>
           </div>
         </div>
       </body>
