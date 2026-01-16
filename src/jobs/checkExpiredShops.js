@@ -4,7 +4,7 @@ const { Op } = require("sequelize");
 const { sendShopLockedEmail } = require("../services/emailService");
 
 async function checkExpiredShops() {
-  console.log("🔍 Checking expired shops...");
+  console.log("Checking expired shops...");
 
   try {
     // Lấy tất cả shop đang HOAT_DONG
@@ -41,14 +41,14 @@ async function checkExpiredShops() {
         // Gửi email thông báo
         if (owner && owner.email) {
           await sendShopLockedEmail(owner.email, owner.hoTen, shop.tenCuaHang);
-          console.log(`📧 Notification email sent to: ${owner.email}`);
+          console.log(`Notification email sent to: ${owner.email}`);
         }
       }
     }
 
-    console.log("✅ Check expired shops completed");
+    console.log("Check expired shops completed");
   } catch (err) {
-    console.error("❌ Error checking expired shops:", err);
+    console.error("Error checking expired shops:", err);
   }
 }
 

@@ -38,7 +38,7 @@ async function registerUser({ email, matKhau, hoTen, maVaiTro = 1 }) {
   const otpCode = generateOTP();
   const otpExpires = new Date(Date.now() + 3 * 60 * 1000); // 3 phút
 
-  console.log("🔑 Generated OTP:", otpCode, "for email:", email);
+  console.log("Generated OTP:", otpCode, "for email:", email);
 
   // Tạo user mới
   const user = await NguoiDung.create({
@@ -61,7 +61,7 @@ async function registerUser({ email, matKhau, hoTen, maVaiTro = 1 }) {
   try {
     await emailService.sendVerificationOTP(email, otpCode);
   } catch (error) {
-    console.error("❌ Failed to send OTP email:", error);
+    console.error("Failed to send OTP email:", error);
     // Không throw error để user vẫn đăng ký được
   }
 
@@ -106,7 +106,7 @@ async function verifyEmailWithOTP(email, otpCode) {
     emailVerificationExpires: null,
   });
 
-  console.log("✅ Email verified successfully for:", email);
+  console.log("Email verified successfully for:", email);
 
   return { message: "Xác thực email thành công!" };
 }
@@ -129,7 +129,7 @@ async function resendVerificationOTP(email) {
   const otpCode = generateOTP();
   const otpExpires = new Date(Date.now() + 3 * 60 * 1000);
 
-  console.log("🔑 Resend OTP:", otpCode, "for email:", email);
+  console.log("Resend OTP:", otpCode, "for email:", email);
 
   await user.update({
     emailVerificationToken: otpCode,
@@ -166,9 +166,7 @@ async function loginUser(email, matKhau) {
 
   // Kiểm tra provider
   if (user.authProvider === "google") {
-    throw new Error(
-      "Tài khoản này được đăng ký bằng Google. Vui lòng đăng nhập bằng Google."
-    );
+    throw new Error("Tài khoản này được đăng ký bằng Google. Vui lòng đăng nhập bằng Google.");
   }
 
   // Kiểm tra mật khẩu
@@ -333,9 +331,7 @@ async function forgotPassword(email) {
   }
 
   if (user.authProvider === "google") {
-    throw new Error(
-      "Tài khoản Google không thể đặt lại mật khẩu bằng cách này"
-    );
+    throw new Error("Tài khoản Google không thể đặt lại mật khẩu bằng cách này");
   }
 
   const resetToken = generateVerificationToken();
@@ -380,7 +376,7 @@ async function resetPassword(token, newPassword) {
   try {
     await emailService.sendPasswordChangedEmail(user.email);
   } catch (error) {
-    console.error("❌ Failed to send password changed email:", error);
+    console.error("Failed to send password changed email:", error);
   }
 
   return { message: "Đặt lại mật khẩu thành công!" };

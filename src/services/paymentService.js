@@ -164,7 +164,7 @@ async function confirmPayment(paymentId, adminId) {
     nguoiXacNhan: adminId,
   });
 
-  // ⭐ Kích hoạt lại shop
+  // Kích hoạt lại shop
   const shop = await CuaHang.findByPk(payment.maCuaHang);
   const wasLocked = shop.trangThai === "BI_KHOA";
   if (wasLocked) {

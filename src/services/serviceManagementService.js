@@ -416,7 +416,7 @@ async function getAllShopServices({ limit = 20, offset = 0, search = "", sortBy 
     maDichVuHeThong: s.maDichVuHeThong,
     tenDichVu: s.DichVuHeThong?.tenDichVu,
     moTa: s.DichVuHeThong?.moTa,
-    thoiLuong: s.thoiLuongShop || s.DichVuHeThong?.thoiLuong, // ⭐ Ưu tiên thoiLuongShop
+    thoiLuong: s.thoiLuongShop || s.DichVuHeThong?.thoiLuong,
     gia: s.gia,
     hinhAnh: s.hinhAnh,
     soLanDat: s.soLanDat || 0,
@@ -491,12 +491,12 @@ async function getShopServiceDetail(shopServiceId) {
     maDichVuHeThong: shopService.maDichVuHeThong,
     tenDichVu: shopService.DichVuHeThong?.tenDichVu,
     moTa: shopService.DichVuHeThong?.moTa,
-    thoiLuong: shopService.thoiLuongShop || shopService.DichVuHeThong?.thoiLuong, // Ưu tiên thoiLuongShop
+    thoiLuong: shopService.thoiLuongShop || shopService.DichVuHeThong?.thoiLuong,
     gia: shopService.gia,
     hinhAnh: shopService.hinhAnh,
-    rating: parseFloat(shopService.danhGiaTrungBinh || 0).toFixed(1), // ⭐ Thêm rating
-    reviewCount: shopService.soLuotDanhGia || 0, // ⭐ Thêm reviewCount
-    bookingCount: shopService.soLanDat || 0, // ⭐ Thêm bookingCount
+    rating: parseFloat(shopService.danhGiaTrungBinh || 0).toFixed(1),
+    reviewCount: shopService.soLuotDanhGia || 0,
+    bookingCount: shopService.soLanDat || 0,
     shop: {
       maCuaHang: shopService.CuaHang?.maCuaHang,
       tenCuaHang: shopService.CuaHang?.tenCuaHang,
@@ -510,14 +510,14 @@ async function getShopServiceDetail(shopServiceId) {
     otherServices: otherServices.map((s) => ({
       maDichVuShop: s.maDichVuShop,
       tenDichVu: s.DichVuHeThong?.tenDichVu,
-      thoiLuong: s.thoiLuongShop || s.DichVuHeThong?.thoiLuong, // ⭐ Ưu tiên thoiLuongShop
+      thoiLuong: s.thoiLuongShop || s.DichVuHeThong?.thoiLuong,
       gia: s.gia,
       hinhAnh: s.hinhAnh,
       soLanDat: s.soLanDat || 0,
       danhGiaTrungBinh: parseFloat(s.danhGiaTrungBinh || 0).toFixed(1),
       soLuotDanhGia: s.soLuotDanhGia || 0,
     })),
-    reviews: [], // TODO: Lấy từ bảng DanhGia nếu có
+    reviews: [], // TODO: Lấy từ bảng DanhGia
   };
 }
 

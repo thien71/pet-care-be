@@ -35,7 +35,7 @@ const resetPasswordSchema = Joi.object({
  * POST /api/auth/register
  */
 async function register(req, res, next) {
-  console.log("🎯 Register controller hit");
+  console.log("Register controller hit");
   const { error } = registerSchema.validate(req.body);
   if (error) return res.status(400).json({ message: error.details[0].message });
 
@@ -43,7 +43,7 @@ async function register(req, res, next) {
     const result = await authService.registerUser(req.body);
     res.status(201).json(result);
   } catch (err) {
-    console.error("❌ Register error:", err.message);
+    console.error("Register error:", err.message);
     next(err);
   }
 }
@@ -53,7 +53,7 @@ async function register(req, res, next) {
  * Body: { email, otp }
  */
 async function verifyOTP(req, res, next) {
-  console.log("🎯 Verify OTP controller hit");
+  console.log("Verify OTP controller hit");
   const { error } = verifyOTPSchema.validate(req.body);
   if (error) return res.status(400).json({ message: error.details[0].message });
 
@@ -62,7 +62,7 @@ async function verifyOTP(req, res, next) {
     const result = await authService.verifyEmailWithOTP(email, otp);
     res.json(result);
   } catch (err) {
-    console.error("❌ Verify OTP error:", err.message);
+    console.error("Verify OTP error:", err.message);
     next(err);
   }
 }
@@ -72,7 +72,7 @@ async function verifyOTP(req, res, next) {
  * Body: { email }
  */
 async function resendOTP(req, res, next) {
-  console.log("🎯 Resend OTP controller hit");
+  console.log("Resend OTP controller hit");
   const { error } = emailSchema.validate(req.body);
   if (error) return res.status(400).json({ message: error.details[0].message });
 
@@ -80,7 +80,7 @@ async function resendOTP(req, res, next) {
     const result = await authService.resendVerificationOTP(req.body.email);
     res.json(result);
   } catch (err) {
-    console.error("❌ Resend OTP error:", err.message);
+    console.error("Resend OTP error:", err.message);
     next(err);
   }
 }
@@ -89,20 +89,17 @@ async function resendOTP(req, res, next) {
  * POST /api/auth/login
  */
 async function login(req, res, next) {
-  console.log("🎯 Login controller hit");
+  console.log("Login controller hit");
   const { error } = loginSchema.validate(req.body);
   if (error) {
     return res.status(400).json({ message: error.details[0].message });
   }
 
   try {
-    const result = await authService.loginUser(
-      req.body.email,
-      req.body.matKhau
-    );
+    const result = await authService.loginUser(req.body.email, req.body.matKhau);
     res.json(result);
   } catch (err) {
-    console.error("💥 Login error:", err.message);
+    console.error("Login error:", err.message);
     next(err);
   }
 }
@@ -121,7 +118,7 @@ async function googleLogin(req, res, next) {
     const result = await authService.loginWithGoogle(googleProfile);
     res.json(result);
   } catch (err) {
-    console.error("❌ Google login error:", err.message);
+    console.error("Google login error:", err.message);
     next(err);
   }
 }
@@ -137,7 +134,7 @@ async function forgotPassword(req, res, next) {
     const result = await authService.forgotPassword(req.body.email);
     res.json(result);
   } catch (err) {
-    console.error("❌ Forgot password error:", err.message);
+    console.error("Forgot password error:", err.message);
     next(err);
   }
 }
@@ -150,13 +147,10 @@ async function resetPassword(req, res, next) {
   if (error) return res.status(400).json({ message: error.details[0].message });
 
   try {
-    const result = await authService.resetPassword(
-      req.body.token,
-      req.body.newPassword
-    );
+    const result = await authService.resetPassword(req.body.token, req.body.newPassword);
     res.json(result);
   } catch (err) {
-    console.error("❌ Reset password error:", err.message);
+    console.error("Reset password error:", err.message);
     next(err);
   }
 }

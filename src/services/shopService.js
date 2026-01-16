@@ -128,14 +128,14 @@ async function approveShop(shopId) {
     throw new Error("Shop not found");
   }
 
-  // ⭐ Tạo trial period 7 ngày khi approve
+  // Trial period 7 ngày khi approve
   const startDate = new Date();
   const endDate = new Date();
   endDate.setDate(endDate.getDate() + 7); // 7 ngày grace period
 
   await ThanhToanShop.create({
     maCuaHang: shop.maCuaHang,
-    maGoi: null, // Chưa có gói, chỉ trial
+    maGoi: null,
     soTien: 0,
     thoiGianBatDau: startDate,
     thoiGianKetThuc: endDate,
@@ -154,7 +154,7 @@ async function approveShop(shopId) {
   const existingRole = await NguoiDungVaiTro.findOne({
     where: {
       maNguoiDung: shop.nguoiDaiDien,
-      maVaiTro: 3, // CHU_CUA_HANG
+      maVaiTro: 3,
     },
   });
 
@@ -241,7 +241,7 @@ async function getPublicShops() {
             [Op.gte]: new Date(), // Còn hạn
           },
         },
-        required: true, // ⭐ Bắt buộc có gói còn hạn
+        required: true, // Bắt buộc có gói còn hạn
         attributes: [],
       },
     ],

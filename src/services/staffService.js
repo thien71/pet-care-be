@@ -81,7 +81,7 @@ async function addEmployee(userId, { email, hoTen, soDienThoai, maVaiTro, kinhNg
     throw new Error("Can only add staff roles (LE_TAN, KY_THUAT_VIEN)");
   }
 
-  // ⭐ Tạo token setup password thay vì tự sinh mật khẩu
+  // Tạo token setup password
   const setupToken = crypto.randomBytes(32).toString("hex");
   const setupExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 giờ
 
@@ -112,7 +112,7 @@ async function addEmployee(userId, { email, hoTen, soDienThoai, maVaiTro, kinhNg
     });
   }
 
-  // ⭐ Gửi email setup password
+  // Gửi email setup password
   try {
     await emailService.sendEmployeeSetupEmail(email, hoTen, setupToken);
   } catch (error) {

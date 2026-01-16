@@ -27,5 +27,5 @@ app.listen(PORT, () => {
 // Khởi động cron jobs
 if (process.env.ENABLE_CRON_JOBS === "true") {
   require("./src/jobs/checkExpiredShops");
-  console.log("✅ Cron jobs started");
+  console.log("Cron jobs started");
 }
