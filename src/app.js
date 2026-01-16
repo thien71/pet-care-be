@@ -6,11 +6,11 @@ const path = require("path");
 const errorHandler = require("./middlewares/errorHandler");
 const routes = require("./routes");
 
-console.log("📦 Initializing Express app...");
+console.log("Initializing Express app...");
 
 const app = express();
 
-// ⭐ CORS phải được config TRƯỚC helmet
+// CORS phải được config TRƯỚC helmet
 app.use(
   cors({
     origin: ["http://localhost:5173", "http://localhost:3000"],
@@ -18,7 +18,7 @@ app.use(
   })
 );
 
-// ⭐ Helmet với CSP config để cho phép load images
+// Helmet với CSP config để cho phép load images
 app.use(
   helmet({
     crossOriginResourcePolicy: { policy: "cross-origin" },
@@ -29,18 +29,18 @@ app.use(
 app.use(morgan("dev"));
 app.use(express.json());
 
-// ⭐ SERVE STATIC FILES - Phải config TRƯỚC routes
+// SERVE STATIC FILES - Phải config TRƯỚC routes
 // Cho phép access /uploads từ frontend
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
-console.log("📁 Static files served from:", path.join(__dirname, "../uploads"));
+console.log("Static files served from:", path.join(__dirname, "../uploads"));
 
 // TEST ROUTE - để kiểm tra server hoạt động
 app.get("/api/test", (req, res) => {
-  console.log("✅ Test route hit!");
+  console.log("Test route hit!");
   res.json({ message: "Server is working!" });
 });
 
-// ⭐ Test endpoint để check uploads
+// Test endpoint để check uploads
 app.get("/api/test-upload", (req, res) => {
   const fs = require("fs");
   const uploadsPath = path.join(__dirname, "../uploads");
@@ -50,37 +50,33 @@ app.get("/api/test-upload", (req, res) => {
     uploadsFolder: {
       exists: fs.existsSync(uploadsPath),
       path: uploadsPath,
-      files: fs.existsSync(uploadsPath)
-        ? fs.readdirSync(uploadsPath).slice(0, 5)
-        : [],
+      files: fs.existsSync(uploadsPath) ? fs.readdirSync(uploadsPath).slice(0, 5) : [],
     },
     avatarsFolder: {
       exists: fs.existsSync(avatarsPath),
       path: avatarsPath,
-      files: fs.existsSync(avatarsPath)
-        ? fs.readdirSync(avatarsPath).slice(0, 5)
-        : [],
+      files: fs.existsSync(avatarsPath) ? fs.readdirSync(avatarsPath).slice(0, 5) : [],
     },
   };
 
   res.json(result);
 });
 
-console.log("🛣️ Registering routes...");
+console.log("Registering routes...");
 routes(app);
 
 app.use(errorHandler);
 
-console.log("🔗 Connecting to database...");
+console.log("Connecting to database...");
 const sequelize = require("./config/db");
 
 sequelize
   .authenticate()
   .then(() => {
-    console.log("✅ Database connection established");
+    console.log("Database connection established");
   })
   .catch((err) => {
-    console.error("❌ Database error:", err.message);
+    console.error("Database error:", err.message);
     console.error(err.stack);
   });
 

@@ -4,9 +4,9 @@ dotenv.config();
 
 const sequelize = new Sequelize(process.env.DATABASE_URL, {
   dialect: "mysql",
-  logging: false, // Set true để debug
+  logging: false,
 });
 
 module.exports = sequelize;
 
-console.log("DATABASE_URL:", process.env.DATABASE_URL); // Nên in ra string đầy đủ
+console.log("DATABASE_URL:", process.env.DATABASE_URL);
